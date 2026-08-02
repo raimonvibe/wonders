@@ -1,0 +1,125 @@
+name: bible_wonders
+description: "Wonders and Hope — the Bible's miracles, with the passage open beside you."
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  # Dart 3.6 / Flutter 3.27. Color.withValues, used throughout theme/ and
+  # features/, replaced withOpacity in that release.
+  sdk: ^3.6.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State. Riverpod because the reader, the catalog and the tour all read the
+  # same "where am I" state from different tabs.
+  #
+  # Held at 2.x deliberately. Riverpod 3 requires a Dart floor above the ^3.6.0
+  # declared above, and every provider here is a StateNotifier, which v3
+  # deprecates. Moving would mean dropping Flutter 3.27-3.34 and rewriting
+  # providers.dart; neither is worth it yet.
+  flutter_riverpod: ^2.6.1
+
+  # Routing. StatefulShellRoute is what lets each bottom-nav tab keep its own
+  # navigator stack, which is what keeps a wonder's passage from stealing the
+  # Bible tab's place. See router.dart.
+  go_router: ^17.3.0
+
+  # The shipped Bible. assets/bible.db is copied out to the documents dir on
+  # first launch, because sqflite cannot open a read-only asset in place.
+  sqflite: ^2.4.1
+  path: ^1.9.0
+  path_provider: ^2.1.5
+
+  # Resume state, mirroring the localStorage keys the website already uses.
+  shared_preferences: ^2.3.3
+
+  # Read aloud. flutter_tts alone stops when the screen locks; audio_service is
+  # what gives it lock-screen controls and lets it keep going in the background.
+  # Both are wired up in features/speech/ — see SETUP.md for the native setup
+  # each one needs, all of which is load-bearing.
+  flutter_tts: ^4.2.0
+  audio_service: ^0.18.15
+
+  # Share a card as an image.
+  share_plus: ^13.3.0
+
+  google_fonts: ^8.2.1
+
+  # The maker's links at the foot of the More tab. url_launcher opens them —
+  # note the https <queries> entry it needs in AndroidManifest.xml, for the same
+  # Android 11 package-visibility reason the speech engine needs one.
+  # font_awesome_flutter is only for the brand marks: Material ships no icon for
+  # LinkedIn or TikTok, and drawing eleven of them by hand to get a footer right
+  # is not a trade worth making.
+  url_launcher: ^6.3.2
+  font_awesome_flutter: ^11.0.0
+  scrollable_positioned_list: ^0.3.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+  # Branding. All three are build-time only — they generate native resources
+  # from branding/app-icon.png and are not linked into the app.
+  flutter_launcher_icons: ^0.14.2
+  flutter_native_splash: ^2.4.4
+
+  # Used by tool/make_branding.dart to derive the adaptive-icon foreground and
+  # the splash mark from the one source image, so there is still only one
+  # picture to update.
+  image: ^4.3.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/bible.db
+    - assets/wonders.json
+
+# --- branding --------------------------------------------------------------
+#
+# Both blocks below are build-time configuration, not app config. They read
+# branding/ and write native resources; nothing here ships as an asset.
+#
+# The one source picture is branding/app-icon.png — the same file the website
+# serves as public/icon-512.png. adaptive-foreground.png beside it is generated:
+#
+#   dart run tool/make_branding.dart
+#   dart run flutter_launcher_icons
+#   dart run flutter_native_splash:create
+#
+# #163D2F is the picture's own ground, and it is also Palette.pine.shade800 —
+# the icon was cut from the same palette the app wears in the Old Testament, so
+# the launcher, the splash and the first screen are one continuous colour.
+
+flutter_launcher_icons:
+  image_path: branding/app-icon.png
+  android: true
+  ios: true
+
+  # Android 8+ crops the two adaptive layers to the launcher's mask. The
+  # foreground is the book already inset into the safe zone by the tool above;
+  # handing over the source image would let a circular mask shave its edges.
+  adaptive_icon_background: "#163D2F"
+  adaptive_icon_foreground: branding/adaptive-foreground.png
+  min_sdk_android: 21
+
+  # The App Store rejects an icon with an alpha channel.
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#163D2F"
+  image: branding/app-icon.png
+  android: true
+  ios: true
+
+  # Android 12 replaced the full-bleed splash with a masked icon on a solid
+  # ground, and it applies its own mask — so this one needs the inset artwork
+  # too, not the source square.
+  android_12:
+    color: "#163D2F"
+    image: branding/splash-icon.png
+    icon_background_color: "#163D2F"

@@ -1,0 +1,13 @@
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  rules:
+    - prefer_single_quotes
+    - require_trailing_commas
+    - unawaited_futures
+
+analyzer:
+  errors:
+    # The generated assets are checked in; nothing here should reference them
+    # before the build scripts have run.
+    missing_required_param: error
