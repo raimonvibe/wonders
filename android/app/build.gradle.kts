@@ -6,6 +6,7 @@ plugins {
 }
 
 import java.util.Properties
+import java.io.File
 import java.io.FileInputStream
 
 val keystoreProperties = Properties()
@@ -41,8 +42,17 @@ android {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String
                 keyPassword = keystoreProperties["keyPassword"] as String
-                storeFile = file("../${keystoreProperties["storeFile"] as String}")
                 storePassword = keystoreProperties["storePassword"] as String
+
+                // An absolute storeFile is used as given; a relative one
+                // resolves against android/. The upload key is better kept
+                // outside the project altogether — anything inside it can be
+                // swept up by a zip, a backup or a stray `git add -f`, and this
+                // is the one file that cannot be regenerated if it is lost.
+                val storePath = keystoreProperties["storeFile"] as String
+                storeFile = File(storePath).let {
+                    if (it.isAbsolute) it else rootProject.file(storePath)
+                }
             }
         }
     }

@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart' show MethodChannel;
 import 'package:flutter_tts/flutter_tts.dart';
 
 import '../../data/prefs.dart';
@@ -186,6 +187,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   final Prefs _prefs;
   final FlutterTts _tts = FlutterTts();
 
+  /// Answered by MainActivity. Android only, and only for the Android 13
+  /// notification permission — see [_ensureNotificationPermission].
+  static const _platform = MethodChannel('wonders/notifications');
+
   /// Bumped by anything that abandons the queue. An utterance records the
   /// generation it was started under; a callback whose generation no longer
   /// matches is from a chunk nobody is listening to any more.
@@ -213,6 +218,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   bool _sleepPending = false;
 
   bool _disposed = false;
+  bool _askedForNotifications = false;
   Future<void>? _initialising;
 
   /// Bind the engine and ask it what it can do.
@@ -273,6 +279,26 @@ class SpeechController extends StateNotifier<SpeechState> {
     await _applySettings();
   }
 
+  /// Ask for the notification permission the lock-screen controls need.
+  ///
+  /// Asked here rather than at launch, because a permission prompt on first
+  /// open has no context: nothing has happened yet that a notification would be
+  /// about. The first time somebody presses Listen, it does.
+  ///
+  /// Asked once per session, and a refusal is not an error. Speech works
+  /// either way — what is lost is only the controls outside the app, so this
+  /// must never stand between the reader and the reading.
+  Future<void> _ensureNotificationPermission() async {
+    if (kIsWeb || !Platform.isAndroid || _askedForNotifications) return;
+    _askedForNotifications = true;
+    try {
+      await _platform.invokeMethod<bool>('ensureNotificationPermission');
+    } catch (_) {
+      // No channel on this build, or the activity has gone. Neither is worth
+      // silencing the app over.
+    }
+  }
+
   Future<List<SpeechVoice>> _loadVoices() async {
     try {
       final raw = await _tts.getVoices;
@@ -296,6 +322,7 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> start(Speakable source, {int from = 0}) async {
     if (source.isEmpty) return;
     await initialise();
+    await _ensureNotificationPermission();
 
     _generation++;
     _errors = 0;

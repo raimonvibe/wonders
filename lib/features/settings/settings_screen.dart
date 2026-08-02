@@ -124,8 +124,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const ListTile(
               title: Text('World English Bible'),
               subtitle: Text(
-                'Public domain. The whole text ships with the app, so nothing '
-                'here needs a connection.',
+                'Public domain. All 66 books ship with the app, so reading '
+                'and search work with no connection at all.',
               ),
             ),
             ListTile(

@@ -6,8 +6,11 @@
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
+		<!-- The home-screen name, which iOS also truncates at roughly twelve
+		     characters. The App Store name is set in App Store Connect and is
+		     still "Wonders and Hope". -->
 		<key>CFBundleDisplayName</key>
-		<string>Wonders and Hope</string>
+		<string>Wonders</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>

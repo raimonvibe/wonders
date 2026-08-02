@@ -105,6 +105,20 @@ The list is keyed by chapter id. `initialScrollIndex` is honoured only on a
 list's first build, and without the key the reader would carry their offset from
 Genesis 50 into Exodus 1.
 
+A wonder's passage **opens on the cited verse**, not at verse 1. That is
+`initialScrollIndex`, not a scroll after the fact, so there is no travel and no
+flash of the wrong text. It is also why `PassageView` uses
+`ScrollablePositionedList` rather than a `ListView`: a lazy list has not built
+the verse you want to reach, so `GlobalKey.currentContext` is null and
+`Scrollable.ensureVisible` returns silently — failing in exactly the case it
+exists for, and appearing to work whenever the target happened to be on screen
+already. Index-based scrolling does not need the target built. The same fix is
+what lets the spoken verse be followed through a whole chapter.
+
+The list is keyed by chapter id. `initialScrollIndex` is honoured only on a
+list's first build, and without the key the reader would carry their offset from
+Genesis 50 into Exodus 1.
+
 ## Layout of the source
 
 ```

@@ -289,8 +289,8 @@ class Speakables {
       chunks: [
         const SpeechChunk(
           'The scripture in this app is the World English Bible, which is in '
-          'the public domain. The whole text ships with the app, so nothing '
-          'here needs a connection.',
+          'the public domain. All 66 books ship with the app, so reading and '
+          'search work with no connection at all.',
           anchor: 'web',
         ),
         SpeechChunk(

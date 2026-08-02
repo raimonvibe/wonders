@@ -1,0 +1,41 @@
+# Copy to android/key.properties and fill in the password twice.
+#
+#   key.properties is gitignored and must stay that way. The upload key is the
+#   one thing here that cannot be regenerated: once the app is on Play, every
+#   update must carry the same certificate, so losing it means losing the
+#   ability to ship an update at all.
+
+storeFile=C:/Users/rober/Documents/keys2/upload-keystore.jks
+storePassword=<the keystore password>
+keyAlias=upload
+keyPassword=<the same password again — see below>
+
+# --- what is known about this key -------------------------------------------
+#
+# It is a PKCS12 store despite the .jks name, which is simply what modern
+# keytool produces. PKCS12 has no separate per-key password, so keyPassword is
+# necessarily the same string as storePassword; Gradle just wants both fields.
+#
+#   alias        upload
+#   certificate  created 2026-08-02 10:33, valid to 2053
+#   SHA-256      F7:98:A5:4E:37:49:53:92:93:90:8A:22:33:76:0B:00:
+#                B8:AE:55:B0:E7:DE:A2:9C:38:A3:A2:3A:DA:21:78:1D
+#
+# There is a second, unrelated keystore at Documents/Keys/upload-keystore.jks.
+# It is a different key. Archive or delete it so there is only one candidate.
+#
+# storeFile may be absolute, and is: keeping the .jks outside the project means
+# a zip of the source tree, a screen share or a stray `git add -f` cannot carry
+# it away with everything else.
+#
+# --- verifying --------------------------------------------------------------
+#
+# Read the keystore (asks for the password):
+#   keytool -list -v -keystore C:/Users/rober/Documents/keys2/upload-keystore.jks
+#
+# Read what a built bundle was actually signed with (no password):
+#   keytool -printcert -jarfile build/app/outputs/bundle/release/app-release.aab
+#
+# The two SHA-256s must match. If the bundle shows "CN=Android Debug" instead,
+# key.properties was missing or malformed and Gradle fell back to debug
+# signing — silently, producing a normal-looking bundle that Play rejects.

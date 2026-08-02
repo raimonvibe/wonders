@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      What sits under the icon in the launcher, and nothing else.
+
+      Short on purpose. A launcher gives an icon one ellipsized line — about
+      ten to twelve characters at default settings, fewer on a five-column
+      grid or a large font size — so "Wonders and Hope" arrived as
+      "Wonders and…". The Play listing is titled separately and still reads
+      "Wonders and Hope"; the two are unrelated fields and only this one has
+      to fit.
+    -->
+    <string name="app_name">Wonders</string>
+</resources>

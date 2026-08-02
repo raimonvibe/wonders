@@ -65,21 +65,30 @@ class WondersHomeScreen extends ConsumerWidget {
             ),
 
             /* --- the four paths -------------------------------------------- */
+            //
+            // Wrapped, not scrolled sideways. The four labels come to about
+            // forty characters, which has never fitted one row on a phone: the
+            // horizontal list this replaces left "Full catalog" off the right
+            // edge with nothing to suggest it was there, so the fourth way into
+            // the catalog was invisible unless you happened to swipe a row that
+            // does not look scrollable. Wrapping costs a second row and shows
+            // all four at any width and any text size.
             SliverToBoxAdapter(
-              child: SizedBox(
-                height: 48,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     for (final path in ReadingPath.values)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: ChoiceChip(
-                          label: Text(path.label),
-                          selected: state.path == path,
-                          onSelected: (_) => controller.setPath(path),
-                        ),
+                      ChoiceChip(
+                        label: Text(path.label),
+                        selected: state.path == path,
+                        // The fill already says which path is chosen, and the
+                        // tick was costing the width that pushed the last chip
+                        // off screen.
+                        showCheckmark: false,
+                        onSelected: (_) => controller.setPath(path),
                       ),
                   ],
                 ),
