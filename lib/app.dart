@@ -6,6 +6,16 @@ import 'providers.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
 
+/// What the app calls itself, and which build it is.
+///
+/// Both are shown on the licences page, and the version is the one thing here
+/// that can silently stop being true: pubspec.yaml is where it is really set,
+/// and a copy of a number is a copy that drifts. `app_version_test` reads the
+/// pubspec and fails if these two disagree, which is cheaper than a dependency
+/// that reads the version off the platform at runtime for one line of text.
+const appName = 'Wonders and Hope';
+const appVersion = '1.0.0';
+
 class BibleWondersApp extends ConsumerStatefulWidget {
   const BibleWondersApp({super.key});
 

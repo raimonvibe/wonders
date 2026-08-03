@@ -19,7 +19,7 @@ import 'providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _bundleTheTypefaces();
+  bundleTheTypefaces();
 
   // Everything the app reads is bundled, so it is all resolvable before the
   // first frame. Doing it here rather than in a FutureBuilder means no screen
@@ -82,7 +82,10 @@ Future<void> main() async {
 /// `allowRuntimeFetching = false` is the half that matters: without it a
 /// variant nobody bundled would still be fetched, and the offline claim would
 /// be true right up until the day somebody adds a bold.
-void _bundleTheTypefaces() {
+///
+/// Public only so `licenses_test` can call it and check the OFL actually
+/// reaches the registry; nothing but `main` should be calling it.
+void bundleTheTypefaces() {
   GoogleFonts.config.allowRuntimeFetching = false;
 
   // The OFL asks that the licence travel with the font. Registering it here

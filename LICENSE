@@ -1,0 +1,46 @@
+MIT License
+
+Copyright (c) 2026 Raimon Baudoin
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+This licence covers the application code only. Three other things ship with it
+and are not the author's to license:
+
+  Scripture
+    The World English Bible, in the public domain, in assets/bible.db. It may
+    be copied, quoted and redistributed freely, including commercially. The one
+    condition is a trademark one: text that has been altered must not still be
+    called the World English Bible. Nothing here alters it.
+    https://ebible.org/engwebp/copyright.htm
+
+  Typefaces
+    Merriweather, Inter and Playfair Display, in assets/fonts/, each under the
+    SIL Open Font License 1.1. The licence text for each sits beside them and
+    is shown in the app under More → Licenses. They are bundled unmodified, so
+    the Reserved Font Names on Merriweather and Playfair Display are not
+    engaged.
+
+  Brand marks
+    The social icons on the More tab come from Font Awesome Free (CC BY 4.0 /
+    SIL OFL / MIT by file type). Each brand mark is a trademark of its owner
+    and is used here only to link to the author's own account on that service.
+    Their presence is not endorsement in either direction.

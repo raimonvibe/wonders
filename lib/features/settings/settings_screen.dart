@@ -11,6 +11,7 @@ import '../../theme/panel.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
 import '../speech/speech_settings_sheet.dart';
+import 'licenses_tile.dart';
 import 'maker_footer.dart';
 
 /// Theme, reading size, and what the text is.
@@ -137,6 +138,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 'against the passage it cites.',
               ),
             ),
+            const LicensesTile(),
 
             const Divider(),
             const MakerFooter(),
