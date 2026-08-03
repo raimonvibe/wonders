@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers.dart';
+import '../../theme/metrics.dart';
 import 'speech_controller.dart';
 import 'speech_voices.dart';
 
@@ -41,12 +42,9 @@ class SpeechSettings extends ConsumerWidget {
               onSelectionChanged: (s) => controller.setReach(s.first),
             ),
           ),
-          const ListTile(
-            dense: true,
-            subtitle: Text(
-              'Applies when you read a wonder aloud. The card is its written '
-              'account; the passage is the chapter it happened in.',
-            ),
+          const Caption(
+            'Applies when you read a wonder aloud. The card is its written '
+            'account; the passage is the chapter it happened in.',
           ),
         ],
 
@@ -65,12 +63,9 @@ class SpeechSettings extends ConsumerWidget {
             ],
           ),
         ),
-        const ListTile(
-          dense: true,
-          subtitle: Text(
-            'The reading finishes the line it is on before it stops, so you '
-            'are not cut off mid sentence.',
-          ),
+        const Caption(
+          'The reading finishes the line it is on before it stops, so you '
+          'are not cut off mid sentence.',
         ),
 
         const _Label('Speed'),
@@ -85,7 +80,18 @@ class SpeechSettings extends ConsumerWidget {
           label: speech.pitch.toStringAsFixed(2),
           // Sliding only — see the note on _RateSlider.
           allowedInteraction: SliderInteraction.slideOnly,
+          // Without this a screen reader reads the raw number: "one point four".
+          // In an app whose whole point is being listened to, the one control a
+          // blind reader is most likely to reach for should say what it does.
+          semanticFormatterCallback: _pitchLabel,
           onChanged: controller.setPitch,
+        ),
+        // Pitch was the one control on this page with no line under it: a bare
+        // slider, no value, nothing saying which end is which.
+        Caption(
+          speech.pitch == 1.0
+              ? 'Natural pitch.'
+              : '${_pitchLabel(speech.pitch)}. Takes effect at the next line.',
         ),
 
         const _Label('Voice'),
@@ -110,6 +116,13 @@ class SpeechSettings extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// "Higher than natural, 1.40×" — a pitch as something other than a number.
+String _pitchLabel(double pitch) {
+  final times = '${pitch.toStringAsFixed(2)}×';
+  if (pitch == 1.0) return 'Natural pitch';
+  return pitch > 1.0 ? 'Higher than natural, $times' : 'Lower than natural, $times';
 }
 
 /// Opens the same settings as a sheet, from wherever speech is happening.
@@ -153,6 +166,11 @@ class _RateSlider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      // The page's own column stretches, so a caption nested in this one has to
+      // as well — otherwise "Normal speed." centres itself under the speed
+      // slider while "Natural pitch." sits against the margin under the next
+      // one, and the two lines look like they belong to different screens.
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Slider(
           value: speech.rate,
@@ -161,16 +179,15 @@ class _RateSlider extends StatelessWidget {
           divisions: 15,
           label: '${speech.rate.toStringAsFixed(2)}×',
           allowedInteraction: SliderInteraction.slideOnly,
+          semanticFormatterCallback: (rate) =>
+              rate == 1.0 ? 'Normal speed' : '${rate.toStringAsFixed(2)} times normal speed',
           onChanged: controller.setRate,
         ),
-        ListTile(
-          dense: true,
-          subtitle: Text(
-            speech.rate == 1.0
-                ? 'Normal speed.'
-                : '${speech.rate.toStringAsFixed(2)}× normal speed. '
-                    'Takes effect at the next line.',
-          ),
+        Caption(
+          speech.rate == 1.0
+              ? 'Normal speed.'
+              : '${speech.rate.toStringAsFixed(2)}× normal speed. '
+                  'Takes effect at the next line.',
         ),
       ],
     );
@@ -218,6 +235,23 @@ class _VoicePicker extends StatelessWidget {
           border: OutlineInputBorder(),
           isDense: true,
         ),
+        // The open list and the closed field want different things: the list is
+        // grouped, so a row need only say which voice; the field has no heading
+        // above it, so it has to say the language too. Same order and length as
+        // [items], group headings included, or the field shows the wrong row.
+        selectedItemBuilder: (context) => [
+          for (final group in groups) ...[
+            const SizedBox.shrink(),
+            for (final voice in group.voices)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  voice.pickerLabel,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+          ],
+        ],
         items: [
           for (final group in groups) ...[
             // Dart has no option-group in a DropdownButton, so the language is
@@ -232,7 +266,10 @@ class _VoicePicker extends StatelessWidget {
             for (final voice in group.voices)
               DropdownMenuItem<String>(
                 value: voice.id,
-                child: Text(voice.name, overflow: TextOverflow.ellipsis),
+                child: Text(
+                  voice.displayName,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
           ],
         ],
@@ -260,3 +297,4 @@ class _Label extends StatelessWidget {
         child: Text(text, style: Theme.of(context).textTheme.titleMedium),
       );
 }
+

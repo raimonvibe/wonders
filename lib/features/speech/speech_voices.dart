@@ -39,6 +39,56 @@ class SpeechVoice {
   /// What `setVoice` takes.
   Map<String, String> get selector => {'name': name, 'locale': locale};
 
+  /// What the picker shows.
+  ///
+  /// [name] is whatever the platform calls the voice, and the platforms do not
+  /// agree on what that means. iOS and Windows give it a human one — "Samantha",
+  /// "Microsoft David Desktop" — and those are shown as they are. Android's
+  /// Google engine gives an identifier: `en-au-x-aua-network`. Putting that in
+  /// front of a reader choosing a voice for scripture is asking them to pick by
+  /// part number.
+  ///
+  /// The picker already groups by language, so the language is not repeated
+  /// here. What is left that a reader can actually act on is whether the voice
+  /// needs a connection — a network voice sounds better and goes quiet on a
+  /// train — with the engine's own three-letter code kept as the tiebreaker
+  /// between two voices that are otherwise described identically.
+  String get displayName {
+    // `en-IN-language` is Google's stand-in for "whichever voice this device
+    // considers default here". It is a real, selectable entry and it sits at
+    // the top of its group, so it is the one a reader is most likely to try —
+    // which makes leaving it reading `en-IN-language` the worst of the lot.
+    if (_googleDefaultVoiceId.hasMatch(name)) return 'Device default';
+
+    final match = _googleVoiceId.firstMatch(name);
+    if (match == null) return name;
+
+    final code = match.group(1)!.toUpperCase();
+    final needsNetwork = match.group(2)!.toLowerCase() == 'network';
+    return needsNetwork ? 'Online · $code' : 'Offline · $code';
+  }
+
+  /// [displayName] with the language in front, for the closed picker.
+  ///
+  /// Inside the open list the language is the group heading, so repeating it on
+  /// every row would be noise. Closed, there is no heading — and "Offline · AUA"
+  /// on its own tells a reader nothing about what they are about to hear.
+  String get pickerLabel => '$languageLabel · $displayName';
+
+  /// `en-au-x-aua-network`, `cmn-cn-x-ccc-local`: a language tag, `x`, a short
+  /// voice code, and how it is synthesised.
+  static final _googleVoiceId = RegExp(
+    r'^[a-z]{2,3}-[a-z]{2,3}-x-([a-z0-9]+)-(local|network)$',
+    caseSensitive: false,
+  );
+
+  /// `en-IN-language` — this locale's default voice, whichever that turns out
+  /// to be.
+  static final _googleDefaultVoiceId = RegExp(
+    r'^[a-z]{2,3}-[a-z]{2,3}-language$',
+    caseSensitive: false,
+  );
+
   /// "en-GB" — the locale as a language tag, however the platform spelt it.
   String get languageTag => locale.replaceAll('_', '-');
 
@@ -283,6 +333,16 @@ const _regionNames = <String, String>{
   'JP': 'Japan',
   'KR': 'South Korea',
   'MX': 'Mexico',
+  // Google ships English voices for these too, and an unlisted region shows as
+  // a bare code — "English (NG)" in the picker, which is the sort of thing that
+  // makes an app look unfinished. The English-speaking ones are worth naming;
+  // the fallback still covers everything else.
+  'NG': 'Nigeria',
+  'KE': 'Kenya',
+  'GH': 'Ghana',
+  'PH': 'Philippines',
+  'PK': 'Pakistan',
+  'SG': 'Singapore',
   'NL': 'Netherlands',
   'NZ': 'New Zealand',
   'PT': 'Portugal',

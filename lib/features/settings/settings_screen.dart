@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
@@ -85,11 +86,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
             ),
-            const ListTile(
-              dense: true,
-              subtitle: Text(
-                'Follow means green in the Old Testament, blue in the New.',
-              ),
+            const Caption(
+              'Follow means green in the Old Testament, blue in the New.',
             ),
 
             const Divider(),
@@ -107,14 +105,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               // scrolls, and a tap on a full-width track is what a scroll that
               // fell short of the touch slop turns into.
               allowedInteraction: SliderInteraction.slideOnly,
+              semanticFormatterCallback: (value) =>
+                  'Reading size ${(value * 100).round()} percent',
               onChanged: ref.read(fontScaleProvider.notifier).set,
             ),
-            ListTile(
-              dense: true,
-              subtitle: Text(
-                '${(scale * 100).round()}% — applies everywhere you read '
-                'scripture.',
-              ),
+            Caption(
+              '${(scale * 100).round()}% — applies everywhere you read '
+              'scripture.',
             ),
 
             const Divider(),

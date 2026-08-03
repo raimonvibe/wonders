@@ -68,6 +68,47 @@ void main() {
     });
   });
 
+  /// Android's Google engine names a voice `en-au-x-aua-network`. Putting that
+  /// in front of somebody choosing a voice for scripture is asking them to pick
+  /// by part number.
+  group('what the picker calls a voice', () {
+    const auNetwork = SpeechVoice(name: 'en-au-x-aua-network', locale: 'en-AU');
+    const auLocal = SpeechVoice(name: 'en-au-x-aua-local', locale: 'en-AU');
+
+    test('says whether it needs a connection, not what its id is', () {
+      expect(auNetwork.displayName, 'Online · AUA');
+      expect(auLocal.displayName, 'Offline · AUA');
+    });
+
+    test('keeps a name a human already wrote', () {
+      expect(samantha.displayName, 'Samantha');
+      const windows =
+          SpeechVoice(name: 'Microsoft David Desktop', locale: 'en-US');
+      expect(windows.displayName, 'Microsoft David Desktop');
+    });
+
+    test('adds the language back for the closed picker', () {
+      // Open, the language is the group heading; closed, there is no heading.
+      expect(auNetwork.pickerLabel, 'English (Australia) · Online · AUA');
+    });
+
+    test('names the locale default rather than showing its id', () {
+      // Top of its group, so the entry a reader is most likely to try.
+      const fallback = SpeechVoice(name: 'en-IN-language', locale: 'en-IN');
+      expect(fallback.displayName, 'Device default');
+    });
+
+    test('leaves an id it does not recognise alone', () {
+      const odd = SpeechVoice(name: 'en-au-something-else', locale: 'en-AU');
+      expect(odd.displayName, 'en-au-something-else');
+    });
+
+    test('names the English-speaking regions Google ships voices for', () {
+      const nigeria = SpeechVoice(name: 'en-ng-x-tfn-local', locale: 'en-NG');
+      expect(nigeria.languageLabel, 'English (Nigeria)');
+    });
+  });
+
   group('the saved voice', () {
     test('is restored when it is still installed', () {
       final chosen = pickDefaultVoice([dutch, samantha], preferredId: dutch.id);

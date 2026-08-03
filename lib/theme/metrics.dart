@@ -1,5 +1,37 @@
 import 'package:flutter/material.dart';
 
+/// The explanatory line under a control.
+///
+/// A `ListTile` carrying only a `subtitle` was doing this job on both settings
+/// surfaces, and it leaves the gap where the title would have gone — a visible
+/// band of nothing between the speed slider and the sentence explaining it,
+/// which reads as a rendering fault rather than as spacing. Material's
+/// supporting text is body copy in the muted colour, set close to the control
+/// it belongs to, so that is what this is.
+///
+/// Lives here rather than in either settings file because both need it and they
+/// must not drift apart: the same sentence should sit the same distance from
+/// its control whether it is read on the More tab or in the mini player's sheet.
+class Caption extends StatelessWidget {
+  const Caption(this.text, {super.key});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Text(
+        text,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.70),
+        ),
+      ),
+    );
+  }
+}
+
 /// How tall a fixed-extent grid tile has to be at the reader's chosen text size.
 ///
 /// A grid with a hard-coded `mainAxisExtent` is a RenderFlex overflow waiting
