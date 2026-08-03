@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
@@ -7,7 +8,9 @@ import '../../models/mark.dart';
 import '../../models/passage_ref.dart';
 import '../../providers.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
+import '../../theme/states.dart';
 import '../library/mark_sheet.dart';
 import '../speech/speakables.dart';
 
@@ -152,22 +155,31 @@ class _PassageViewState extends ConsumerState<PassageView> {
     final speakingHere = spokenAnchor != null &&
         spokenAnchor.startsWith('verse:${widget.chapterId}:');
 
-    return FutureBuilder<(Chapter?, List<Verse>)>(
+    // LayoutBuilder rather than MediaQuery: on a tablet the navigation rail
+    // takes a slice off the left of the window, and a column measured against
+    // the whole screen would be that much too wide.
+    return LayoutBuilder(
+      builder: (context, constraints) => FutureBuilder<(Chapter?, List<Verse>)>(
       future: _chapter,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return _Message(
-            'That chapter could not be opened.\n${snapshot.error}',
+          return EmptyState(
+            icon: Icons.error_outline,
+            title: 'That chapter could not be opened.',
+            body: '${snapshot.error}',
           );
         }
         final data = snapshot.data;
         if (data == null) {
-          return const Center(child: CircularProgressIndicator());
+          return const Loading('Opening the chapter');
         }
 
         final (chapter, verses) = data;
         if (verses.isEmpty) {
-          return const _Message('That chapter is empty.');
+          return const EmptyState(
+            icon: Icons.menu_book_outlined,
+            title: 'That chapter is empty.',
+          );
         }
 
         if (speakingHere) {
@@ -177,6 +189,20 @@ class _PassageViewState extends ConsumerState<PassageView> {
         }
 
         final highlight = widget.highlight;
+
+        // The gutter grows on a wide screen so the line of scripture does not.
+        // Measured against the size the verse is actually set at, so a reader
+        // who has turned the reading size up gets a wider column rather than a
+        // longer line — the same 66 characters, larger.
+        //
+        // The list itself stays full width. The chapter-turn fling lives on
+        // this surface, and a reader on a tablet should not have to find the
+        // text to swipe out of Genesis 50.
+        final gutter = readingGutter(
+          constraints.maxWidth,
+          fontSize: 18 * scale,
+          minimum: widget.padding.left,
+        );
 
         return ScrollablePositionedList.builder(
           // Keyed by chapter so turning the page builds a fresh list.
@@ -190,7 +216,12 @@ class _PassageViewState extends ConsumerState<PassageView> {
           // bar reads as the start of the chapter rather than as a place
           // somewhere inside it.
           initialAlignment: 0.12,
-          padding: widget.padding,
+          padding: EdgeInsets.fromLTRB(
+            gutter,
+            widget.padding.top,
+            gutter,
+            widget.padding.bottom,
+          ),
           itemCount: verses.length,
           itemBuilder: (context, index) {
             final verse = verses[index];
@@ -249,13 +280,21 @@ class _PassageViewState extends ConsumerState<PassageView> {
               behavior: HitTestBehavior.opaque,
               // Press and hold to keep a verse. One gesture for marking,
               // re-colouring, annotating and letting go — see showMarkSheet.
+              //
+              // The tap-through comes first because a long press has no visible
+              // beginning: nothing on screen changes until the sheet has
+              // animated in, so a reader who was not sure they had held it long
+              // enough would let go and try again. The buzz is the receipt.
               onLongPress: chapter == null
                   ? null
-                  : () => showMarkSheet(
+                  : () {
+                      HapticFeedback.selectionClick();
+                      showMarkSheet(
                         context,
                         verse: verse,
                         reference: '${chapter.reference}:${verse.number}',
-                      ),
+                      );
+                    },
               // A tap only means something while this chapter is being read,
               // where it moves the reading to the verse you tapped.
               onTap: speakingHere
@@ -266,6 +305,7 @@ class _PassageViewState extends ConsumerState<PassageView> {
           },
         );
       },
+      ),
     );
   }
 
@@ -304,17 +344,4 @@ class _PassageViewState extends ConsumerState<PassageView> {
       ),
     );
   }
-}
-
-class _Message extends StatelessWidget {
-  const _Message(this.text);
-  final String text;
-
-  @override
-  Widget build(BuildContext context) => Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(text, textAlign: TextAlign.center),
-        ),
-      );
 }

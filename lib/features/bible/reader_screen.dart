@@ -59,8 +59,7 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
     }
   }
 
-  void _goTo(Chapter? chapter) {
-    if (chapter == null) return;
+  void _goTo(Chapter chapter) {
     setState(() {
       _chapterId = chapter.id;
       _chapter = null;
@@ -101,28 +100,92 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
           // boundaries — Genesis 50 swipes into Exodus 1.
           onHorizontalDragEnd: (details) {
             final velocity = details.primaryVelocity ?? 0;
-            if (velocity < -200) _goTo(_next);
-            if (velocity > 200) _goTo(_previous);
+            final target = velocity < -200
+                ? _next
+                : velocity > 200
+                    ? _previous
+                    : null;
+            // Null at the two ends of the Bible: the fling is simply ignored.
+            if (target != null) _goTo(target);
           },
           child: PassageView(chapterId: _chapterId),
         ),
       ),
-      bottomNavigationBar: BottomAppBar(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton.icon(
-              onPressed: _previous == null ? null : () => _goTo(_previous),
-              icon: const Icon(Icons.chevron_left),
-              label: Text(_previous?.reference ?? ''),
+      bottomNavigationBar: ChapterTurnBar(
+        previous: _previous,
+        next: _next,
+        onGo: _goTo,
+      ),
+    );
+  }
+}
+
+/// The chapter either side, named.
+///
+/// Two things were wrong with the row this replaces. A reference is as long as
+/// its book — "1 Chronicles 29" twice over does not fit a phone, and at a
+/// raised text size it overflows well before that, on the one screen a reader
+/// raises their text size to use. And at the ends of the Bible the missing
+/// neighbour left a disabled chevron floating with no label beside it, which
+/// looks like a button that failed to load rather than an edge you have
+/// reached.
+///
+/// Lifted out of [ReaderScreen] so it can be laid out in a test without the
+/// 7.5 MB scripture database behind it.
+class ChapterTurnBar extends StatelessWidget {
+  const ChapterTurnBar({
+    super.key,
+    required this.previous,
+    required this.next,
+    required this.onGo,
+  });
+
+  /// Null at Genesis 1 and at Revelation 22 respectively.
+  final Chapter? previous;
+  final Chapter? next;
+
+  final ValueChanged<Chapter> onGo;
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomAppBar(
+      child: Row(
+        children: [
+          Expanded(
+            child: _end(Alignment.centerLeft, previous, Icons.chevron_left),
+          ),
+          Expanded(
+            child: _end(
+              Alignment.centerRight,
+              next,
+              Icons.chevron_right,
+              iconAtEnd: true,
             ),
-            TextButton.icon(
-              onPressed: _next == null ? null : () => _goTo(_next),
-              icon: const Icon(Icons.chevron_right),
-              iconAlignment: IconAlignment.end,
-              label: Text(_next?.reference ?? ''),
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Half the bar is all a reference can ever have, so it is allowed one line
+  /// and told to trail off rather than to grow.
+  Widget _end(
+    Alignment alignment,
+    Chapter? chapter,
+    IconData icon, {
+    bool iconAtEnd = false,
+  }) {
+    if (chapter == null) return const SizedBox.shrink();
+    return Align(
+      alignment: alignment,
+      child: TextButton.icon(
+        onPressed: () => onGo(chapter),
+        icon: Icon(icon),
+        iconAlignment: iconAtEnd ? IconAlignment.end : IconAlignment.start,
+        label: Text(
+          chapter.reference,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
       ),
     );

@@ -5,7 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../data/reading_paths.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/app_theme.dart';
 import '../../theme/metrics.dart';
+import '../../theme/palette.dart';
+import '../../theme/states.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
 
@@ -51,7 +54,7 @@ class WondersHomeScreen extends ConsumerWidget {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: Text(
                   '${repo.count} wonders, each with the passage it happened in.',
                   style: TextStyle(color: palette.shade200),
@@ -66,41 +69,25 @@ class WondersHomeScreen extends ConsumerWidget {
 
             /* --- the four paths -------------------------------------------- */
             //
-            // Wrapped, not scrolled sideways. The four labels come to about
-            // forty characters, which has never fitted one row on a phone: the
-            // horizontal list this replaces left "Full catalog" off the right
-            // edge with nothing to suggest it was there, so the fourth way into
-            // the catalog was invisible unless you happened to swipe a row that
-            // does not look scrollable. Wrapping costs a second row and shows
-            // all four at any width and any text size.
+            // The label above them is not decoration. Four chips arriving with
+            // no prompt read as filters already applied rather than as a choice
+            // being offered, and to a screen reader they were four unrelated
+            // buttons in a row with nothing to say what they select between.
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final path in ReadingPath.values)
-                      ChoiceChip(
-                        label: Text(path.label),
-                        selected: state.path == path,
-                        // The fill already says which path is chosen, and the
-                        // tick was costing the width that pushed the last chip
-                        // off screen.
-                        showCheckmark: false,
-                        onSelected: (_) => controller.setPath(path),
-                      ),
+                    SectionLabel('Choose a way in', palette: palette),
+                    const SizedBox(height: 10),
+                    _PathChips(selected: state.path, onPick: controller.setPath),
+                    const SizedBox(height: 10),
+                    Text(
+                      state.path.blurb,
+                      style: TextStyle(color: palette.shade200, fontSize: 13),
+                    ),
                   ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Text(
-                  state.path.blurb,
-                  style: TextStyle(color: palette.shade200, fontSize: 13),
                 ),
               ),
             ),
@@ -181,6 +168,100 @@ class WondersHomeScreen extends ConsumerWidget {
   }
 }
 
+/// The four ways in, on one row where they fit and two by two where they do not.
+///
+/// A `Wrap` put three on the first row and left "Full catalog" alone on the
+/// second, which reads as three choices and an afterthought rather than as one
+/// set of four — and a ragged right edge is the loudest thing on a screen whose
+/// job is to be quiet.
+///
+/// One row is what this wants to be, and on a tablet or a phone in landscape it
+/// is what it is. On an upright phone it is not available: the four labels come
+/// to forty-four characters and there is room for about half that, so the only
+/// way onto one row is abbreviations — "Era", "All" — that give up the plain
+/// language the rest of the app is written in. Two by two at equal widths is
+/// then the arrangement that is actually balanced.
+///
+/// Which of the two is decided by measuring the labels rather than by a
+/// breakpoint, because the thing that decides is the reader's text size as much
+/// as their screen: turn the system font up and four stop fitting on a width
+/// where they fitted before.
+class _PathChips extends StatelessWidget {
+  const _PathChips({required this.selected, required this.onPick});
+
+  final ReadingPath selected;
+  final ValueChanged<ReadingPath> onPick;
+
+  static const _gap = 8.0;
+
+  /// A chip is its label plus Material's padding either side, and the label
+  /// wants a little air before it looks cramped against the outline.
+  static const _chipChrome = 40.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, box) {
+        const paths = ReadingPath.values;
+        final columns = _columnsThatFit(context, box.maxWidth);
+
+        return Column(
+          children: [
+            for (var row = 0; row < paths.length; row += columns) ...[
+              if (row > 0) const SizedBox(height: _gap),
+              Row(
+                children: [
+                  for (var column = 0; column < columns; column++) ...[
+                    if (column > 0) const SizedBox(width: _gap),
+                    Expanded(child: _chip(paths[row + column])),
+                  ],
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  /// Four if all four labels fit a row at their natural width, otherwise two.
+  ///
+  /// Three is never right: it is the arrangement that left one chip stranded.
+  static int _columnsThatFit(BuildContext context, double available) {
+    final style = Theme.of(context).textTheme.labelLarge;
+    final scaler = MediaQuery.textScalerOf(context);
+
+    var widest = 0.0;
+    for (final path in ReadingPath.values) {
+      final painter = TextPainter(
+        text: TextSpan(text: path.label, style: style),
+        textDirection: Directionality.of(context),
+        textScaler: scaler,
+      )..layout();
+      widest = widest > painter.width ? widest : painter.width;
+      painter.dispose();
+    }
+
+    // Equal columns, so the widest label is what every chip has to be.
+    final needed = (widest + _chipChrome) * 4 + _gap * 3;
+    return needed <= available ? 4 : 2;
+  }
+
+  Widget _chip(ReadingPath path) => ChoiceChip(
+        // Centred, because a chip stretched to a column's width and labelled
+        // from the left has its text drifting away from the shape around it.
+        label: SizedBox(
+          width: double.infinity,
+          child: Text(path.label, textAlign: TextAlign.center),
+        ),
+        selected: selected == path,
+        // The fill already says which path is chosen, and the tick was costing
+        // width the label wants.
+        showCheckmark: false,
+        onSelected: (_) => onPick(path),
+      );
+}
+
 /// A grid of themes or eras. Generic over the filter type so the two pickers
 /// are the same widget.
 class _PickerGrid<T> extends StatelessWidget {
@@ -220,32 +301,44 @@ class _PickerGrid<T> extends StatelessWidget {
         itemCount: entries.length,
         itemBuilder: (context, index) {
           final entry = entries[index];
-          return Card(
-            // The grid already spaces these; Card's own 4pt margin was eating
-            // height the label needed.
-            margin: EdgeInsets.zero,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => onPick(entry.key),
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      entry.value,
-                      // Paired with titleLines above: without a cap, a longer
-                      // label would find a third line and overflow again.
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${counts[entry.key] ?? 0}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+          final count = counts[entry.key] ?? 0;
+          // "Healing" over a bare "34" left the reader to guess what was being
+          // counted — chapters? verses? books? It is one word, and it fits.
+          final tally = count == 1 ? '1 wonder' : '$count wonders';
+
+          return Semantics(
+            button: true,
+            label: '${entry.value}, $tally',
+            excludeSemantics: true,
+            child: Card(
+              // The grid already spaces these; Card's own 4pt margin was eating
+              // height the label needed.
+              margin: EdgeInsets.zero,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => onPick(entry.key),
+                child: Padding(
+                  padding: const EdgeInsets.all(14),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        entry.value,
+                        // Paired with titleLines above: without a cap, a longer
+                        // label would find a third line and overflow again.
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        tally,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -331,10 +424,19 @@ class _ToolbarState extends State<_Toolbar> {
             onChanged: controller.setQuery,
           ),
           const SizedBox(height: 10),
-          Row(
+          // A Wrap, not a Row. "Bible order" and "Best known" inside a
+          // SegmentedButton come to most of a phone's width on their own, so
+          // the count beside them overflowed the moment the reader turned their
+          // system font up — the one setting a person who is struggling to read
+          // is most likely to have already changed. Wrapping drops the sort
+          // control onto its own line instead of striping the screen.
+          Wrap(
+            alignment: WrapAlignment.spaceBetween,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 12,
+            runSpacing: 10,
             children: [
               Text(count == 1 ? '1 wonder' : '$count wonders'),
-              const Spacer(),
               // Start Here is already an order; offering to re-sort it would
               // undo the curation.
               if (state.path != ReadingPath.startHere)
@@ -409,14 +511,10 @@ class _EmptyState extends StatelessWidget {
       );
     }
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-      child: Column(
-        children: [
-          Text(message, textAlign: TextAlign.center),
-          if (action != null) ...[const SizedBox(height: 16), action],
-        ],
-      ),
+    return EmptyState(
+      icon: query.isEmpty ? Icons.auto_awesome_outlined : Icons.search_off,
+      title: message,
+      action: action,
     );
   }
 }
@@ -428,19 +526,70 @@ class _WonderTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final repo = ref.watch(wondersProvider);
     final palette = ref.watch(themeProvider);
+    final parallels = repo.parallelsOf(wonder);
+
+    // The reference, and then who else tells it. A branching-arrow icon was
+    // carrying "this event is told more than once" on its own, which is a lot
+    // to ask of a 16pt glyph with no label: it meant nothing on sight and
+    // nothing at all to a screen reader, which read the row as the title and
+    // stopped. The book names are shorter than the icon was wide.
+    final subtitle = parallels.isEmpty
+        ? wonder.passage.label
+        : '${wonder.passage.label} · also in '
+            '${parallels.map((w) => w.passage.bookName).join(', ')}';
+
     return ListTile(
-      title: Text(wonder.title),
+      // Which testament, before the tap rather than after it. Opening a card
+      // repaints the whole app green or blue, and until now nothing on the way
+      // in said which it would be — the colour change read as a glitch. It is
+      // the same left rule a kept verse wears, so it is a mark the reader has
+      // already met.
+      leading: _TestamentRule(testament: wonder.testament),
+      // ListTile reserves an icon's worth of room for a leading widget, and a
+      // 4pt rule floating in 40pt of space reads as a rendering fault. Told the
+      // truth about its width, it sits against the margin like the rule on a
+      // kept verse does.
+      minLeadingWidth: 4,
+      horizontalTitleGap: 14,
+      title: Text(wonder.title, maxLines: 2, overflow: TextOverflow.ellipsis),
       subtitle: Text(
-        wonder.passage.label,
+        subtitle,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        // The app's own palette, not the wonder's. The rule already says which
+        // testament this is; colouring the reference too would put two greens
+        // and two blues in one list of text and read as an inconsistency
+        // rather than as a second copy of the same fact.
         style: TextStyle(color: palette.shade300, fontSize: 12),
       ),
-      trailing: wonder.hasParallels
-          ? Icon(Icons.call_split, size: 16, color: palette.shade400)
-          : null,
       onTap: () => context.go('/wonders/${wonder.id}'),
     );
   }
+}
+
+/// Green for the Old Testament, blue for the New.
+///
+/// Stated against the fixed palettes rather than the one the app is wearing,
+/// because the whole point is to tell two rows in the same list apart.
+class _TestamentRule extends StatelessWidget {
+  const _TestamentRule({required this.testament});
+
+  final Testament testament;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        label: testament.label,
+        child: Container(
+          width: 4,
+          height: 34,
+          decoration: BoxDecoration(
+            color: AppTheme.paletteFor(testament).shade400,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      );
 }
 
 class _ResumeCard extends ConsumerWidget {
@@ -456,12 +605,17 @@ class _ResumeCard extends ConsumerWidget {
     if (wonder == null) return const SizedBox.shrink();
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
       child: Card(
+        margin: EdgeInsets.zero,
         child: ListTile(
-          leading: const Icon(Icons.history),
+          leading: const Icon(Icons.history, color: Palette.accent),
           title: const Text('Continue where you left off'),
           subtitle: Text(wonder.title),
+          // Neither resume card said it was tappable. The one control on the
+          // More tab that leads somewhere carries a chevron, so the two cards
+          // that lead somewhere should carry one too.
+          trailing: const Icon(Icons.chevron_right),
           onTap: () => context.go('/wonders/${wonder.id}'),
         ),
       ),

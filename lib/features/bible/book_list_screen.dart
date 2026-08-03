@@ -7,6 +7,7 @@ import '../../models/wonder.dart' show Testament;
 import '../../providers.dart';
 import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
+import '../../theme/states.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
 
@@ -55,7 +56,7 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
           builder: (context, snapshot) {
             final books = snapshot.data;
             if (books == null) {
-              return const Center(child: CircularProgressIndicator());
+              return const Loading('Opening the Bible');
             }
             final old = books.where((b) => b.testament == Testament.old);
             final current = books.where((b) => b.testament == Testament.aNew);
@@ -98,9 +99,10 @@ class _ResumeCard extends ConsumerWidget {
       child: Card(
         margin: EdgeInsets.zero,
         child: ListTile(
-          leading: const Icon(Icons.history),
+          leading: const Icon(Icons.history, color: Palette.accent),
           title: const Text('Continue reading'),
           subtitle: Text(chapter.reference),
+          trailing: const Icon(Icons.chevron_right),
           onTap: () => context.go('/bible/${chapter.bookId}/${chapter.number}'),
         ),
       ),
@@ -150,23 +152,33 @@ class _BookGrid extends StatelessWidget {
       itemCount: books.length,
       itemBuilder: (context, index) {
         final book = books[index];
-        return Card(
-          margin: EdgeInsets.zero,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () => context.go('/bible/${book.id}'),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(book.name, overflow: TextOverflow.ellipsis),
-                  ),
-                  Text(
-                    '${book.chapterCount}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+        // The tile shows a name and a bare number, which is only legible
+        // because the tiles are all the same shape and the number is always
+        // small — read aloud, it came out as "Genesis 50" and sounded like a
+        // reference to a chapter that does not exist. The label is for the ear;
+        // the number stays as it looks.
+        return Semantics(
+          button: true,
+          label: '${book.name}, ${book.chapterCount} chapters',
+          excludeSemantics: true,
+          child: Card(
+            margin: EdgeInsets.zero,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => context.go('/bible/${book.id}'),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(book.name, overflow: TextOverflow.ellipsis),
+                    ),
+                    Text(
+                      '${book.chapterCount}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -202,20 +214,34 @@ class _BibleSearchDelegate extends SearchDelegate<void> {
   @override
   Widget buildResults(BuildContext context) {
     if (query.trim().length < 2) {
-      return const Center(child: Text('Type at least two characters.'));
+      return const EmptyState(
+        icon: Icons.search,
+        title: 'Search all 66 books',
+        body: 'Type at least two characters. The whole text is on the phone, '
+            'so this works with no connection.',
+      );
     }
     return FutureBuilder<List<VerseHit>>(
       future: ref.read(bibleProvider).search(query),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Search failed: ${snapshot.error}'));
+          return EmptyState(
+            icon: Icons.error_outline,
+            title: 'That search could not be run.',
+            body: '${snapshot.error}',
+          );
         }
         final hits = snapshot.data;
         if (hits == null) {
-          return const Center(child: CircularProgressIndicator());
+          return Loading('Searching for “$query”');
         }
         if (hits.isEmpty) {
-          return const Center(child: Text('Nothing found.'));
+          return EmptyState(
+            icon: Icons.search_off,
+            title: 'No verse contains “$query”.',
+            body: 'Every word has to appear in the verse, so fewer words find '
+                'more.',
+          );
         }
         return ListView.builder(
           itemCount: hits.length,

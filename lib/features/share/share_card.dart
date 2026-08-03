@@ -66,15 +66,32 @@ class ShareCard extends StatelessWidget {
               ),
               const SizedBox(height: 8),
 
-              // The scripture. Flexible so a long quote shrinks the gap below
-              // rather than overflowing a fixed-height canvas.
-              Flexible(
-                child: Text(
-                  quote ?? '',
-                  style: GoogleFonts.merriweather(
-                    fontSize: _quoteSizeFor(quote ?? ''),
-                    height: 1.55,
-                    color: palette.shade50,
+              // The scripture, given every pixel that is going spare and then
+              // set at the largest size that fits it.
+              //
+              // This was a `Flexible` above a `Spacer`, which are both flex 1,
+              // so the two split the slack half and half however much of it the
+              // quote actually needed — the quote got 50% whatever it was. It
+              // survived only because the sizes below were tuned against a
+              // typeface that was not being used: with real Merriweather, which
+              // is wider, Exodus 14:21 lost its last line and a half under the
+              // rule. On a picture whose entire content rule is "verbatim
+              // scripture and nothing else", a quote sliced mid-sentence is the
+              // worst thing this file could produce, and it produces it into a
+              // PNG that goes out to other people.
+              //
+              // Expanded, and no Spacer: the quote owns the slack, and the
+              // attribution gathers at the foot of the card.
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, box) => Align(
+                    alignment: Alignment.topLeft,
+                    child: Text(
+                      quote ?? '',
+                      style: _quoteStyle(
+                        _quoteSizeFor(quote ?? '', box.biggest),
+                      ).copyWith(color: palette.shade50),
+                    ),
                   ),
                 ),
               ),
@@ -102,7 +119,7 @@ class ShareCard extends StatelessWidget {
                 ),
               ),
 
-              const Spacer(),
+              const SizedBox(height: 40),
               // Expanded rather than a Spacer between the two: this canvas is
               // fixed, so a site label that does not fit has nowhere to go and
               // Flutter would paint its overflow stripes straight into the
@@ -137,14 +154,37 @@ class ShareCard extends StatelessWidget {
     );
   }
 
-  /// Quotes run from a few words to several verses. Step the size down so the
-  /// long ones still fit without the short ones looking lost.
-  static double _quoteSizeFor(String quote) {
-    final length = quote.length;
-    if (length < 90) return 68;
-    if (length < 180) return 58;
-    if (length < 300) return 48;
-    if (length < 460) return 40;
-    return 34;
+  /// The face and leading the quote is set in, at a given size.
+  ///
+  /// Stated once so the size chosen by [_quoteSizeFor] is chosen by measuring
+  /// the very style that is then painted. Measuring one style and painting
+  /// another is how a fitted layout stops fitting.
+  static TextStyle _quoteStyle(double size) =>
+      GoogleFonts.merriweather(fontSize: size, height: 1.55);
+
+  /// The largest size at which the whole quote fits [box].
+  ///
+  /// This used to step down by character count, which is a guess twice over: it
+  /// assumes every character is the same width — "WWWW" and "iiii" are not —
+  /// and it assumes a particular typeface, which is exactly the assumption that
+  /// broke when the faces stopped being whatever the network happened to
+  /// deliver. Laying the text out and asking how tall it came to costs six
+  /// TextPainter passes on a picture that is built once, by hand, when somebody
+  /// presses Share.
+  static double _quoteSizeFor(String quote, Size box) {
+    // 68 is the size a short quote looks right at; below 30 the verse is
+    // smaller than the reference under it and the composition has failed at
+    // something other than fitting.
+    for (var size = 68.0; size > 30; size -= 2) {
+      final painter = TextPainter(
+        text: TextSpan(text: quote, style: _quoteStyle(size)),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: box.width);
+
+      final fits = painter.height <= box.height;
+      painter.dispose();
+      if (fits) return size;
+    }
+    return 30;
   }
 }

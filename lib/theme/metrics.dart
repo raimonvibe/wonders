@@ -1,5 +1,37 @@
 import 'package:flutter/material.dart';
 
+import 'palette.dart';
+
+/// The small caps rule over a group.
+///
+/// The wonder card had this as a private widget and used it five times; the
+/// home screen and the settings list wanted the same thing and had nothing to
+/// reach for, so one grew headings in `titleLarge` and the other grew none at
+/// all. It is the quietest way to say "these belong together" — quiet enough to
+/// use on a screen whose real content is a list — and it carries a `header`
+/// semantic, which is what lets a screen reader jump between the groups instead
+/// of walking every chip.
+class SectionLabel extends StatelessWidget {
+  const SectionLabel(this.text, {super.key, required this.palette});
+
+  final String text;
+  final Palette palette;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+        header: true,
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.4,
+            color: palette.shade300,
+          ),
+        ),
+      );
+}
+
 /// The explanatory line under a control.
 ///
 /// A `ListTile` carrying only a `subtitle` was doing this job on both settings
@@ -30,6 +62,44 @@ class Caption extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The side margins a column of text should have, given the room it is in.
+///
+/// A line of prose has a length past which it stops being readable, and it is
+/// shorter than people expect. The typographic rule of thumb — and the one the
+/// accessibility guidance repeats — is 50 to 75 characters, with WCAG naming 80
+/// as the ceiling for Latin scripts; past that the eye loses the start of the
+/// next line on the way back from the end of this one, and reading turns into
+/// finding your place.
+///
+/// On a phone this never bites. 400 pt of screen at 18 pt Merriweather is about
+/// 36 characters — comfortably inside the 30–40 that suits a hand-held column.
+/// It bites on everything wider: a 10-inch tablet runs to about 78 characters
+/// and a landscape foldable well past 100, which is the shape this app is
+/// hardest to read in and the one nobody tests. Scripture is exactly the kind
+/// of text people read for half an hour at a time, so it is worth the margin.
+///
+/// Returns the horizontal inset, never below [minimum], so the phone case comes
+/// out precisely as it did before.
+double readingGutter(
+  double available, {
+  /// The size the text is actually set at, the reader's own scale included.
+  required double fontSize,
+
+  /// The gutter a narrow screen keeps.
+  double minimum = 20,
+}) {
+  // Characters per line ≈ width ÷ (fontSize × average advance). Merriweather
+  // and Inter both average near 0.52 em across lower-case text, so 66
+  // characters — the middle of the range — is a column about 34 times the font
+  // size wide.
+  const idealCharacters = 66;
+  const averageAdvance = 0.52;
+
+  final ideal = idealCharacters * averageAdvance * fontSize;
+  final gutter = (available - ideal) / 2;
+  return gutter < minimum ? minimum : gutter;
 }
 
 /// How tall a fixed-extent grid tile has to be at the reader's chosen text size.
@@ -74,6 +144,16 @@ double gridTileExtent(
       ? 0.0
       : lineOf(text.bodySmall, 12) * subtitleLines + 2;
 
-  final needed = title + subtitle + chrome;
+  final needed = title + subtitle + chrome + _slack;
   return needed < minimum ? minimum : needed;
 }
+
+/// Two pixels of nothing, on purpose.
+///
+/// Working from the theme's nominal metrics gets within a fraction of a pixel
+/// of what the text engine actually lays out, and a fraction is all it takes:
+/// the era grid overflowed by 0.2 pt at a text size of 1.3, which is not a
+/// rounding error to look at but the full yellow-and-black stripe across four
+/// tiles. The measurement is a prediction of the engine's arithmetic, not a
+/// copy of it, so it is rounded up rather than trusted to the decimal.
+const _slack = 2.0;

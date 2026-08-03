@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/bible.dart';
 import '../../providers.dart';
 import '../../theme/metrics.dart';
+import '../../theme/states.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
 
@@ -62,7 +63,7 @@ class _ChapterListScreenState extends ConsumerState<ChapterListScreen> {
           body: DecoratedBox(
             decoration: BoxDecoration(gradient: palette.pageGradient),
             child: data == null
-                ? const Center(child: CircularProgressIndicator())
+                ? const Loading('Opening the book')
                 : GridView.builder(
                     padding: const EdgeInsets.all(16),
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -79,14 +80,23 @@ class _ChapterListScreenState extends ConsumerState<ChapterListScreen> {
                     itemCount: chapters.length,
                     itemBuilder: (context, index) {
                       final chapter = chapters[index];
-                      return Card(
-                        margin: EdgeInsets.zero,
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(16),
-                          onTap: () => context.go(
-                            '/bible/${widget.bookId}/${chapter.number}',
+                      // A grid of bare numerals is the right thing to look at
+                      // and the wrong thing to listen to: TalkBack read this
+                      // screen as "one, two, three" with no clue what was being
+                      // counted. Sighted readers keep the numerals.
+                      return Semantics(
+                        button: true,
+                        label: '${book?.name ?? 'Chapter'} ${chapter.number}',
+                        excludeSemantics: true,
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(16),
+                            onTap: () => context.go(
+                              '/bible/${widget.bookId}/${chapter.number}',
+                            ),
+                            child: Center(child: Text(chapter.number)),
                           ),
-                          child: Center(child: Text(chapter.number)),
                         ),
                       );
                     },

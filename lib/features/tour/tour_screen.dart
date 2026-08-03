@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/bible.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/metrics.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
 import '../speech/speech_chunk.dart';
@@ -128,10 +129,36 @@ class _TourScreenState extends ConsumerState<TourScreen> {
               tooltip: 'Read this step aloud',
             ),
         ],
+        // How far in you are, in words as well as in fill. A four-pixel bar can
+        // say "about a fifth"; it cannot say "step 3 of 14", and 14 is a number
+        // a reader deciding whether to start wants to know. Measured rather
+        // than guessed for the same reason the grids are — a PreferredSize is a
+        // hard height, and a hard height is an overflow at a raised text size.
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(4),
-          child: LinearProgressIndicator(
-            value: steps.isEmpty ? 0 : (step + 1) / steps.length,
+          preferredSize: Size.fromHeight(
+            gridTileExtent(context, titleLines: 0, subtitleLines: 1, chrome: 10),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 6),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    steps.isEmpty
+                        ? ''
+                        : 'Step ${step + 1} of ${steps.length}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              ),
+              LinearProgressIndicator(
+                value: steps.isEmpty ? 0 : (step + 1) / steps.length,
+              ),
+            ],
           ),
         ),
       ),
@@ -152,6 +179,51 @@ class _TourScreenState extends ConsumerState<TourScreen> {
               WonderCardBody(wonder: steps[index]),
         ),
       ),
+      // The two ways on.
+      //
+      // The tour was swipeable and nothing else: a card that scrolls vertically
+      // gives no hint that it also moves sideways, so a reader could open the
+      // tour, read one wonder and never learn there were thirteen more. Same
+      // shape as the reader's chapter-turn bar, because it is the same action.
+      bottomNavigationBar: steps.isEmpty
+          ? null
+          : BottomAppBar(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: TextButton.icon(
+                        onPressed: step == 0 ? null : () => _turn(-1),
+                        icon: const Icon(Icons.chevron_left),
+                        label: const Text('Back'),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed:
+                            step >= steps.length - 1 ? null : () => _turn(1),
+                        icon: const Icon(Icons.chevron_right),
+                        iconAlignment: IconAlignment.end,
+                        label: const Text('Next'),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
+
+  /// Move one step. Animated rather than jumped, so a tap and a swipe arrive
+  /// at the same place the same way — and `onPageChanged` does the recording,
+  /// the repaint and the narration for both.
+  void _turn(int by) => _pages.animateToPage(
+        _pages.page!.round() + by,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOutCubic,
+      );
 }

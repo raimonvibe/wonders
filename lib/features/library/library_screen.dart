@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/mark.dart';
 import '../../providers.dart';
 import '../../theme/app_theme.dart';
-import '../../theme/palette.dart';
+import '../../theme/states.dart';
 import '../share/share_service.dart' show shareOrigin;
 import 'library_export.dart';
 
@@ -62,8 +62,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                   ),
                   Expanded(
                     child: marks.isEmpty
-                        ? const Center(
-                            child: Text('Nothing in that colour yet.'),
+                        ? EmptyState(
+                            icon: Icons.filter_alt_off_outlined,
+                            title: 'Nothing in that colour yet.',
+                            action: TextButton(
+                              onPressed: () => setState(() => _filter = null),
+                              child: Text('Show all ${all.length}'),
+                            ),
                           )
                         : ListView.builder(
                             padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
@@ -247,29 +252,10 @@ class _Empty extends StatelessWidget {
   const _Empty();
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.bookmark_border, size: 40, color: Palette.accent),
-            const SizedBox(height: 16),
-            Text(
-              'Nothing kept yet.',
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Press and hold any verse while you are reading to mark it in '
-              'colour, and add a note if you want to.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) => const EmptyState(
+        icon: Icons.bookmark_border,
+        title: 'Nothing kept yet.',
+        body: 'Press and hold any verse while you are reading to mark it in '
+            'colour, and add a note if you want to.',
+      );
 }

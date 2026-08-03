@@ -1,8 +1,12 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
+import 'package:flutter/foundation.dart'
+    show LicenseEntryWithLineBreaks, LicenseRegistry;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
 import 'data/bible_repository.dart';
@@ -15,6 +19,7 @@ import 'providers.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _bundleTheTypefaces();
 
   // Everything the app reads is bundled, so it is all resolvable before the
   // first frame. Doing it here rather than in a FutureBuilder means no screen
@@ -57,6 +62,40 @@ Future<void> main() async {
       child: const BibleWondersApp(),
     ),
   );
+}
+
+/// Read the typefaces out of the app rather than off the network.
+///
+/// The About screen says the app works "with no connection at all", and until
+/// now that was true of the words and false of the shapes they were set in:
+/// `google_fonts` fetches from fonts.gstatic.com at first use, so a reader who
+/// installed on a plane got the system fallback face, and the first share image
+/// of that session was typeset differently from every later one. It is the kind
+/// of failure that never produces a bug report — nothing is broken, the app is
+/// just quietly not the app.
+///
+/// The eight files in assets/fonts are the exact variants this app asks for
+/// through the `GoogleFonts` API, taken from the package's own manifest and
+/// checked against the SHA-256 and byte length it records for each. Nothing is
+/// subset or re-hinted, so what renders offline is what rendered online.
+///
+/// `allowRuntimeFetching = false` is the half that matters: without it a
+/// variant nobody bundled would still be fetched, and the offline claim would
+/// be true right up until the day somebody adds a bold.
+void _bundleTheTypefaces() {
+  GoogleFonts.config.allowRuntimeFetching = false;
+
+  // The OFL asks that the licence travel with the font. Registering it here
+  // puts all three in the app's own "Licenses" page, alongside every other
+  // dependency, rather than in a file only the repository can see.
+  LicenseRegistry.addLicense(() async* {
+    for (final family in ['Merriweather', 'Inter', 'PlayfairDisplay']) {
+      final licence = await rootBundle.loadString(
+        'assets/fonts/OFL-$family.txt',
+      );
+      yield LicenseEntryWithLineBreaks([family], licence);
+    }
+  });
 }
 
 /// Put read-aloud on the lock screen, and let it keep speaking off screen.

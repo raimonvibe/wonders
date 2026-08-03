@@ -79,6 +79,20 @@ flutter:
     - assets/bible.db
     - assets/wonders.json
 
+    # The typefaces, so the app is offline in the way it says it is.
+    #
+    # Committed deliberately, like assets/ above. google_fonts prefers a
+    # matching asset to the network and needs no `fonts:` block here, because it
+    # finds them by the Google Fonts API's own filenames — Family-Variant.ttf.
+    # Add a variant only by adding its file: main() turns runtime fetching off,
+    # so an unbundled weight is a visible fallback rather than a silent
+    # download. See _bundleTheTypefaces.
+    #
+    # 2.4 MB for eight variants, of which Merriweather is 1.1 MB — its current
+    # release carries a very wide language coverage. The OFL texts sit beside
+    # them and are registered into the app's Licenses page.
+    - assets/fonts/
+
 # --- branding --------------------------------------------------------------
 #
 # Both blocks below are build-time configuration, not app config. They read

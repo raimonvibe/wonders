@@ -7,6 +7,7 @@ import '../../providers.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
+import '../../theme/panel.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
 import '../speech/speech_settings_sheet.dart';
@@ -164,16 +165,8 @@ class _SizeSample extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        curve: Curves.easeOut,
-        width: double.infinity,
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-        decoration: BoxDecoration(
-          gradient: palette.cardGradient,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: palette.shade600.withValues(alpha: 0.5)),
-        ),
+      child: Panel(
+        palette: palette,
         child: Text.rich(
           TextSpan(
             children: [

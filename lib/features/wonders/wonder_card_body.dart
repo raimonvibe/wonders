@@ -6,7 +6,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../data/wonders_repository.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
+import '../../theme/panel.dart';
 import '../speech/speakables.dart';
 
 /// One wonder card. The counterpart of ../../components/WonderCardBody.tsx,
@@ -44,8 +46,17 @@ class WonderCardBody extends ConsumerWidget {
       }),
     );
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 48),
+    return LayoutBuilder(
+      builder: (context, constraints) => ListView(
+      // Same reasoning as the reader's: a card is mostly prose, and prose read
+      // across the full width of a tablet runs past the length at which a line
+      // is comfortable to follow. 16 is what the body copy is set at.
+      padding: EdgeInsets.fromLTRB(
+        readingGutter(constraints.maxWidth, fontSize: 16),
+        16,
+        readingGutter(constraints.maxWidth, fontSize: 16),
+        48,
+      ),
       children: [
         _Spoken(
           active: active == 'chips',
@@ -93,7 +104,7 @@ class WonderCardBody extends ConsumerWidget {
 
         if (wonder.details.isNotEmpty) ...[
           const SizedBox(height: 28),
-          _SectionTitle('Notable details', palette: palette),
+          SectionLabel('Notable details', palette: palette),
           const SizedBox(height: 10),
           for (var i = 0; i < wonder.details.length; i++)
             Padding(
@@ -148,19 +159,13 @@ class WonderCardBody extends ConsumerWidget {
           const SizedBox(height: 28),
           _Spoken(
             active: active == 'reflection',
-            child: Container(
-              padding: const EdgeInsets.all(18),
-              decoration: BoxDecoration(
-                gradient: palette.cardGradient,
-                borderRadius: BorderRadius.circular(14),
-                border: const Border(
-                  left: BorderSide(color: Palette.accent, width: 3),
-                ),
-              ),
+            child: Panel(
+              palette: palette,
+              accent: true,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _SectionTitle('To sit with', palette: palette),
+                  SectionLabel('To sit with', palette: palette),
                   const SizedBox(height: 8),
                   Text(
                     wonder.reflectionQuestion!,
@@ -179,7 +184,7 @@ class WonderCardBody extends ConsumerWidget {
 
         if (parallels.isNotEmpty) ...[
           const SizedBox(height: 28),
-          _SectionTitle('Also in', palette: palette),
+          SectionLabel('Also in', palette: palette),
           const SizedBox(height: 10),
           _Spoken(
             active: active == 'parallels',
@@ -202,7 +207,7 @@ class WonderCardBody extends ConsumerWidget {
 
         if (wonder.alsoSee.isNotEmpty) ...[
           const SizedBox(height: 24),
-          _SectionTitle('Read further', palette: palette),
+          SectionLabel('Read further', palette: palette),
           const SizedBox(height: 10),
           for (final ref in wonder.alsoSee)
             Padding(
@@ -214,6 +219,7 @@ class WonderCardBody extends ConsumerWidget {
             ),
         ],
       ],
+      ),
     );
   }
 }
@@ -298,13 +304,9 @@ class _PullQuote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Panel(
+      palette: palette,
       padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-      decoration: BoxDecoration(
-        gradient: palette.cardGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: palette.shade600.withValues(alpha: 0.5)),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -332,24 +334,6 @@ class _PullQuote extends StatelessWidget {
   }
 }
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle(this.text, {required this.palette});
-
-  final String text;
-  final Palette palette;
-
-  @override
-  Widget build(BuildContext context) => Text(
-        text.toUpperCase(),
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.4,
-          color: palette.shade300,
-        ),
-      );
-}
-
 class _Prose extends StatelessWidget {
   const _Prose(
     this.title,
@@ -373,7 +357,7 @@ class _Prose extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _SectionTitle(title, palette: palette),
+            SectionLabel(title, palette: palette),
             const SizedBox(height: 10),
             Text(
               body!,

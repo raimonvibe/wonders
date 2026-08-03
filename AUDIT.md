@@ -145,20 +145,31 @@ mounted. Android ignores the parameter.
 
 ## Open — needs a decision from you
 
-### A. `google_fonts` fetches typefaces over the network
-The About text says *"All 66 books ship with the app, so reading and search work
-with no connection at all."* The typefaces do not. `google_fonts` fetches
-Merriweather, Inter and Playfair at first use, which is why `INTERNET` is in the
-manifest and why `ShareService.renderPng` has to `await GoogleFonts.pendingFonts()`
-before it can capture a card.
+*(A is kept here, struck through, rather than deleted: the reasoning is why the
+fonts are committed and worth finding again.)*
 
-A reader who installs on a plane sees the app in fallback faces, and the first
-share of that session is a differently-typeset image.
+### ~~A. `google_fonts` fetches typefaces over the network~~ — closed
+**Decided and done**, in the UI pass after this audit. `assets/fonts/` now
+carries the eight variants the app asks for through the `GoogleFonts` API —
+Merriweather Regular and Italic, Inter Regular, Medium and SemiBold, Playfair
+Display Regular, SemiBold and Italic — taken from the package's own manifest and
+verified against the SHA-256 and byte length it records for each.
+`main()` sets `GoogleFonts.config.allowRuntimeFetching = false`, so an unbundled
+weight is now a visible fallback rather than a silent download, and the three
+OFL texts are registered into the app's Licenses page.
 
-The fix is to bundle the three families as assets and set
-`GoogleFonts.config.allowRuntimeFetching = false`. It is not a large change, but
-it adds font binaries and their OFL licence files to the repo, and that is a call
-about repo weight and licensing hygiene that is yours, not mine. Say the word.
+Cost: **2.4 MB**, of which Merriweather is 1.1 MB — its current release carries
+a very wide language coverage.
+
+It was not only cosmetic. With the real faces bundled, the share card turned out
+to be **clipping the scripture mid-sentence**: `ShareCard._quoteSizeFor` stepped
+the type size down by character count, tuned against whatever face the fallback
+happened to be, and the quote shared a flex line with a `Spacer` that took half
+the slack regardless. Exodus 14:21 lost its last line and a half under the
+reference rule — in a PNG that goes out to other people. The size is now chosen
+by laying the text out with a `TextPainter` and asking whether it fits. Both
+share goldens were regenerated and are the first ones that show the real
+typography.
 
 ### B. The Tour tab is still a scaffold
 `lib/features/tour/tour_screen.dart` says so itself. `_steps` is
