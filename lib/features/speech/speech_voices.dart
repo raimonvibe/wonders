@@ -128,7 +128,7 @@ int _qualityScore(SpeechVoice voice) {
   var score = 0;
   // Android names its higher-quality downloads with these words; iOS uses
   // "premium" and "enhanced" for the same idea.
-  if (RegExp('natural|premium|enhanced|neural|network', caseSensitive: false)
+  if (RegExp('natural|premium|enhanced|neural', caseSensitive: false)
       .hasMatch(voice.name)) {
     score += 5;
   }
@@ -137,6 +137,18 @@ int _qualityScore(SpeechVoice voice) {
     score += 2;
   }
   if (voice.isEnglish) score += 3;
+
+  // Android's `-network` voices are synthesised on a server. They sound better
+  // than their `-local` twin, and they are the reason the default used to
+  // wander: a network voice is only in getVoices when the engine can reach the
+  // server, so the best-ranked English voice was a different one from one
+  // launch to the next — en-au one time, en-in the next — and a reader who had
+  // chosen nothing heard the passage in a new accent for no reason they could
+  // see. Ranked just below the local voice of the same quality, so the default
+  // is something the device always has, and a network voice is still there in
+  // the picker for anyone who wants it.
+  if (RegExp('network', caseSensitive: false).hasMatch(voice.name)) score -= 1;
+
   return score;
 }
 

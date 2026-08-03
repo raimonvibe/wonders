@@ -20,6 +20,23 @@ import 'share_card.dart';
 /// and removed. `Offstage` would be the obvious choice and is the wrong one:
 /// offstage subtrees are laid out but not painted, so the capture comes back
 /// blank.
+/// Where the share sheet should appear to come from.
+///
+/// iOS presents the sheet as a popover on iPad and needs a rectangle to hang
+/// the arrow off; without one it has historically thrown, and since iOS 26 the
+/// origin is validated on iPhone too, where an omitted or zero rect makes the
+/// sheet fail to present at all. Android ignores it.
+///
+/// Call this *before* any await, while the widget that was tapped is certainly
+/// still mounted. Returns null if the context has no box yet, which is a fair
+/// answer: null is what the parameter meant before, so nothing is worse than it
+/// was.
+Rect? shareOrigin(BuildContext context) {
+  final box = context.findRenderObject();
+  if (box is! RenderBox || !box.hasSize) return null;
+  return box.localToGlobal(Offset.zero) & box.size;
+}
+
 class ShareService {
   const ShareService({required this.siteLabel});
 
@@ -31,6 +48,10 @@ class ShareService {
 
   Future<void> shareWonder(BuildContext context, Wonder wonder) async {
     if (!wonder.isShareable) return;
+
+    // Measured before the awaits below, while the button that was tapped is
+    // certainly still on screen — see [shareOrigin].
+    final origin = shareOrigin(context);
 
     final png = await renderPng(context, wonder);
     final file = File(
@@ -45,6 +66,7 @@ class ShareService {
         // image still says where the words came from.
         text: '${wonder.quoteRef} — ${wonder.title}\n$siteLabel',
         subject: wonder.title,
+        sharePositionOrigin: origin,
       ),
     );
   }

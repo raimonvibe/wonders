@@ -6,6 +6,7 @@ import '../../models/mark.dart';
 import '../../providers.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/palette.dart';
+import '../share/share_service.dart' show shareOrigin;
 import 'library_export.dart';
 
 /// Everything the reader has kept.
@@ -27,9 +28,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
     final all = ref.watch(marksProvider);
-    final marks = _filter == null
-        ? all
-        : all.where((m) => m.colour == _filter).toList();
+    final marks =
+        _filter == null ? all : all.where((m) => m.colour == _filter).toList();
 
     return Scaffold(
       appBar: AppBar(
@@ -82,8 +82,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   /// omitted three colours because a chip was selected would be worse than none.
   Future<void> _export(BuildContext context, List<Mark> marks) async {
     final messenger = ScaffoldMessenger.of(context);
+    final origin = shareOrigin(context);
     try {
-      await LibraryExport.share(marks);
+      await LibraryExport.share(marks, origin: origin);
     } catch (error) {
       messenger.showSnackBar(
         SnackBar(content: Text('Could not export: $error')),

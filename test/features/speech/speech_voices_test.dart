@@ -8,7 +8,8 @@ import 'package:flutter_test/flutter_test.dart';
 /// third from the top reads as a bug in the app, not as an Apple default.
 void main() {
   const zarvox = SpeechVoice(name: 'Zarvox', locale: 'en-US');
-  const grandma = SpeechVoice(name: 'Grandma (Deutsch (Deutschland))', locale: 'de-DE');
+  const grandma =
+      SpeechVoice(name: 'Grandma (Deutsch (Deutschland))', locale: 'de-DE');
   const eloquence = SpeechVoice(name: 'Eloquence Reed', locale: 'en-GB');
   const samantha = SpeechVoice(name: 'Samantha', locale: 'en-US');
   const enhanced = SpeechVoice(name: 'Daniel (Enhanced)', locale: 'en-GB');
@@ -17,7 +18,11 @@ void main() {
   group('novelty voices', () {
     test('are recognised however the platform dresses the name', () {
       expect(isNoveltyVoice(zarvox), isTrue);
-      expect(isNoveltyVoice(grandma), isTrue, reason: 'the locale suffix hides it');
+      expect(
+        isNoveltyVoice(grandma),
+        isTrue,
+        reason: 'the locale suffix hides it',
+      );
       expect(isNoveltyVoice(eloquence), isTrue);
       expect(isNoveltyVoice(samantha), isFalse);
     });
@@ -45,6 +50,22 @@ void main() {
       expect(groups.first.label, startsWith('English'));
       expect(groups.last.label, startsWith('Dutch'));
     });
+
+    // A `-network` voice is only in getVoices when the engine can reach its
+    // server, so ranking one first made the default wander between launches:
+    // en-au one time, en-in the next, in a new accent nobody asked for.
+    test('prefers a local voice to its network twin', () {
+      const network = SpeechVoice(name: 'en-au-x-aua-network', locale: 'en-AU');
+      const local = SpeechVoice(name: 'en-au-x-aua-local', locale: 'en-AU');
+      expect(usableVoices([network, local]).first.name, 'en-au-x-aua-local');
+      expect(pickDefaultVoice(usableVoices([network, local])), local);
+    });
+
+    test('still offers the network voice, just not first', () {
+      const network = SpeechVoice(name: 'en-au-x-aua-network', locale: 'en-AU');
+      const local = SpeechVoice(name: 'en-au-x-aua-local', locale: 'en-AU');
+      expect(usableVoices([network, local]), hasLength(2));
+    });
   });
 
   group('the saved voice', () {
@@ -69,7 +90,8 @@ void main() {
   test('ids survive a name with spaces in it', () {
     // "Microsoft David Desktop" is a real voice name; splitting an id on the
     // space would have made it unmatchable after a restart.
-    const spaced = SpeechVoice(name: 'Microsoft David Desktop', locale: 'en-US');
+    const spaced =
+        SpeechVoice(name: 'Microsoft David Desktop', locale: 'en-US');
     expect(pickDefaultVoice([spaced], preferredId: spaced.id), spaced);
   });
 

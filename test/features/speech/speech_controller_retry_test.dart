@@ -4,12 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Losing the race with the speech service must not cost the picker.
+/// Losing the race with the speech service must not cost the reader a voice.
 ///
-/// main() calls initialise() before the first frame, which on Android is the
+/// main() starts initialise() before the first frame, which on Android is the
 /// moment the engine is least likely to have finished binding. getVoices does
-/// not fail then — it answers null — so nothing throws and a memoised init
-/// would hold an empty picker for the life of the session.
+/// not fail then — it answers null — so nothing throws, and a picker that gave
+/// up on the first ask would leave the reading on the engine's default with the
+/// reader's own choice ignored.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -18,23 +19,21 @@ void main() {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
 
   /// Voices as the platform spells them: maps of name and locale.
-  const voices = [
-    {'name': 'Samantha', 'locale': 'en-US'},
-    {'name': 'Daniel', 'locale': 'en-GB'},
-  ];
+  const samantha = {'name': 'Samantha', 'locale': 'en-US'};
+  const daniel = {'name': 'Daniel', 'locale': 'en-GB'};
+  const voices = [samantha, daniel];
 
   late int getVoicesCalls;
 
-  /// Answers [replies] in order, repeating the last one once they run out —
-  /// so "null, then a list" describes a service that binds between two calls.
-  void mockEngine(List<Object?> replies) {
+  /// [answer] is handed the call number, one-based, and decides what the engine
+  /// says that time — which is how "silent until the service binds" is spelt.
+  void mockEngine(Object? Function(int call) answer) {
     getVoicesCalls = 0;
     messenger.setMockMethodCallHandler(channel, (call) async {
       switch (call.method) {
         case 'getVoices':
-          final index = getVoicesCalls.clamp(0, replies.length - 1);
           getVoicesCalls++;
-          return replies[index];
+          return answer(getVoicesCalls);
         case 'getSpeechRateValidRange':
           return {
             'min': 0.0,
@@ -50,49 +49,88 @@ void main() {
     });
   }
 
-  Future<SpeechController> controller() async {
-    SharedPreferences.setMockInitialValues({});
-    return SpeechController(Prefs(await SharedPreferences.getInstance()));
+  Object? never(int _) => null;
+  Object? always(int _) => voices;
+
+  Future<Prefs> freshPrefs([Map<String, Object> initial = const {}]) async {
+    SharedPreferences.setMockInitialValues(initial);
+    return Prefs(await SharedPreferences.getInstance());
   }
 
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
-  test('an unbound engine leaves the picker empty but does not settle',
-      () async {
-    mockEngine([null]);
-    final speech = await controller();
+  group('a service that binds late', () {
+    test('is asked again until it answers, inside one initialise', () async {
+      // Silent for the first two asks, bound by the third — the ordinary case
+      // on a cold start, and the one the reader must never notice.
+      mockEngine((call) => call >= 3 ? voices : null);
+      final speech = SpeechController(await freshPrefs());
 
-    await speech.initialise();
+      await speech.initialise();
 
-    expect(speech.state.voices, isEmpty);
-    expect(
-      speech.state.ready,
-      isTrue,
-      reason: 'speech still works on the engine default',
-    );
+      expect(getVoicesCalls, 3);
+      expect(
+        speech.state.voices.map((v) => v.name),
+        unorderedEquals(['Samantha', 'Daniel']),
+      );
+      expect(
+        speech.state.voiceId,
+        isNotNull,
+        reason: 'the first reading must already be in a chosen voice',
+      );
+    });
+
+    test('is given up on eventually, leaving speech usable', () async {
+      mockEngine(never);
+      final speech = SpeechController(await freshPrefs());
+
+      await speech.initialise();
+
+      expect(
+        getVoicesCalls,
+        greaterThan(1),
+        reason: 'one ask is not a fair question',
+      );
+      expect(speech.state.voices, isEmpty);
+      expect(
+        speech.state.ready,
+        isTrue,
+        reason: 'speech still works on the engine default',
+      );
+    });
   });
 
-  test('the next caller asks again, and gets the voices', () async {
-    mockEngine([null, voices]);
-    final speech = await controller();
+  group('an initialise that came back empty', () {
+    test('does not settle, so a later caller tries again', () async {
+      mockEngine(never);
+      final speech = SpeechController(await freshPrefs());
 
-    await speech.initialise();
-    expect(speech.state.voices, isEmpty);
+      await speech.initialise();
+      final afterFirst = getVoicesCalls;
+      await speech.initialise();
 
-    await speech.initialise();
+      expect(getVoicesCalls, greaterThan(afterFirst));
+    });
 
-    expect(getVoicesCalls, 2);
-    // Order is sortVoices' business, and it has its own tests.
-    expect(
-      speech.state.voices.map((v) => v.name),
-      unorderedEquals(['Samantha', 'Daniel']),
-    );
-    expect(speech.state.voiceId, isNotNull);
+    test('leaves the saved voice alone for that retry', () async {
+      mockEngine(never);
+      final speech = SpeechController(
+        await freshPrefs({'flutter.speech-voice': 'Daniel|en-GB'}),
+      );
+
+      await speech.initialise();
+
+      expect(
+        speech.state.voiceId,
+        'Daniel|en-GB',
+        reason: 'the failed pass must not overwrite it with a default',
+      );
+    });
   });
 
   test('a load that worked is not repeated', () async {
-    mockEngine([voices]);
-    final speech = await controller();
+    mockEngine(always);
+    final speech = SpeechController(await freshPrefs());
 
     await speech.initialise();
     await speech.initialise();
@@ -101,19 +139,46 @@ void main() {
     expect(getVoicesCalls, 1);
   });
 
-  test('a retry keeps the reader\'s saved voice', () async {
-    SharedPreferences.setMockInitialValues({'speech-voice': 'Daniel|en-GB'});
-    mockEngine([null, voices]);
-    final speech =
-        SpeechController(Prefs(await SharedPreferences.getInstance()));
+  /// A voice substituted for an absent one must not become the preference.
+  ///
+  /// Android's `-network` voices are in getVoices only while the engine can
+  /// reach its server, so the saved voice goes missing and comes back on its
+  /// own. Substituting is right; remembering the substitute is not — that is
+  /// how a reader ends up permanently in an accent they never chose.
+  group('a voice that is only temporarily missing', () {
+    const auNetwork = {'name': 'en-au-x-aua-network', 'locale': 'en-AU'};
+    const inNetwork = {'name': 'en-in-x-ena-network', 'locale': 'en-IN'};
+    const savedId = 'en-au-x-aua-network|en-AU';
 
-    await speech.initialise();
-    await speech.initialise();
+    test('is stood in for, without the stand-in being saved', () async {
+      final prefs = await freshPrefs({'flutter.speech-voice': savedId});
+      mockEngine((_) => [inNetwork]);
+      final speech = SpeechController(prefs);
 
-    expect(
-      speech.state.voiceId,
-      'Daniel|en-GB',
-      reason: 'the failed pass must not overwrite it with a default',
-    );
+      await speech.initialise();
+
+      expect(speech.state.voiceId, 'en-in-x-ena-network|en-IN');
+      expect(
+        prefs.speechVoiceId,
+        savedId,
+        reason: 'the reader chose en-AU and has not unchosen it',
+      );
+    });
+
+    test('is read again the moment the device offers it', () async {
+      final prefs = await freshPrefs({'flutter.speech-voice': savedId});
+
+      mockEngine((_) => [inNetwork]);
+      final stale = SpeechController(prefs);
+      await stale.initialise();
+      expect(stale.state.voiceId, 'en-in-x-ena-network|en-IN');
+
+      // The next launch, with the network voice reachable again.
+      mockEngine((_) => [auNetwork, inNetwork]);
+      final fresh = SpeechController(prefs);
+      await fresh.initialise();
+
+      expect(fresh.state.voiceId, savedId);
+    });
   });
 }

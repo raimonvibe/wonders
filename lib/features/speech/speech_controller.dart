@@ -294,9 +294,20 @@ class SpeechController extends StateNotifier<SpeechState> {
     // cheaper than a picker that is empty for good.
     if (voices.isEmpty) _initialising = null;
 
+    // Resolved against what the reader actually chose, never against a voice a
+    // previous pass substituted for it.
+    //
+    // Passing state.voiceId here would cement the substitute: miss the saved
+    // voice once — and a `-network` voice is missing from getVoices whenever
+    // the engine cannot reach its server — and the fallback becomes the
+    // preference every later pass resolves from, so the reading never returns
+    // to the chosen voice even once the device can offer it again. Reading the
+    // preference back each time makes a substitution last exactly as long as
+    // the absence that caused it.
+    //
     // copyWith keeps the existing voiceId when [chosen] is null, so a failed
     // load leaves the reader's saved preference in place for that retry.
-    final chosen = pickDefaultVoice(voices, preferredId: state.voiceId);
+    final chosen = pickDefaultVoice(voices, preferredId: _prefs.speechVoiceId);
     state = state.copyWith(voices: voices, voiceId: chosen?.id, ready: true);
     await _applySettings();
   }
@@ -321,7 +332,32 @@ class SpeechController extends StateNotifier<SpeechState> {
     }
   }
 
+  /// How long to keep asking the engine for its voices before giving up.
+  ///
+  /// Android binds the speech service asynchronously and main() runs before it
+  /// is ready, so the first call routinely answers null. One ask is therefore
+  /// not a fair question — and getting no answer is expensive in a way that is
+  /// easy to miss: with no list there is no voice to apply, the reading starts
+  /// on the engine's default, and the reader's own voice only arrives when
+  /// something later asks again. That is the "the voice changed on its own"
+  /// report. A second of patience at launch, off the critical path, is what
+  /// makes the first reading already sound the way the reader chose.
+  static const _voiceAttempts = 6;
+  static const _voiceRetryDelay = Duration(milliseconds: 250);
+
   Future<List<SpeechVoice>> _loadVoices() async {
+    for (var attempt = 0; attempt < _voiceAttempts; attempt++) {
+      if (_disposed) return const [];
+      final voices = await _askForVoices();
+      if (voices.isNotEmpty) return voices;
+      if (attempt < _voiceAttempts - 1) await Future.delayed(_voiceRetryDelay);
+    }
+    // Desktop and some Android engines do not implement getVoices at all.
+    // Speech still works on the system default; the picker is simply empty.
+    return const [];
+  }
+
+  Future<List<SpeechVoice>> _askForVoices() async {
     try {
       final raw = await _tts.getVoices;
       if (raw is! List) return const [];
@@ -329,8 +365,6 @@ class SpeechController extends StateNotifier<SpeechState> {
           raw.map(SpeechVoice.fromPlatform).whereType<SpeechVoice>().toList();
       return usableVoices(parsed);
     } catch (_) {
-      // Desktop and some Android engines do not implement getVoices. Speech
-      // still works on the system default; the picker is simply empty.
       return const [];
     }
   }

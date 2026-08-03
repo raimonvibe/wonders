@@ -1,10 +1,12 @@
 import 'dart:io';
+import 'dart:ui' show Rect;
 
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
 import '../../models/mark.dart';
+import '../share/share_service.dart' show shareOrigin;
 
 /// A way for kept verses to leave the phone.
 ///
@@ -46,7 +48,10 @@ class LibraryExport {
   /// A file rather than a body of text: a reader with three hundred marks would
   /// otherwise hand a share target a string long enough for some of them to
   /// silently truncate it.
-  static Future<void> share(List<Mark> marks) async {
+  /// [origin] is where iOS should hang the share popover — see [shareOrigin].
+  /// Measured by the caller before this future is awaited, while the control
+  /// that was tapped is certainly still on screen.
+  static Future<void> share(List<Mark> marks, {Rect? origin}) async {
     final file = File(
       p.join((await getTemporaryDirectory()).path, 'kept-verses.txt'),
     );
@@ -56,6 +61,7 @@ class LibraryExport {
       ShareParams(
         files: [XFile(file.path, mimeType: 'text/plain')],
         subject: 'Kept verses',
+        sharePositionOrigin: origin,
       ),
     );
   }

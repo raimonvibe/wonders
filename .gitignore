@@ -4,7 +4,16 @@
 build/
 .flutter-plugins
 .flutter-plugins-dependencies
-pubspec.lock
+
+# pubspec.lock IS committed, deliberately — note there is no rule for it here.
+#
+# The Dart guidance splits on what the package is: a library ignores its
+# lockfile because its consumers resolve their own, an application commits it
+# because the resolved set is part of what was tested. This is an application,
+# and it is one shipped to a store. Ignoring the lockfile means a fresh clone
+# resolves whatever is newest that day, so the build that goes to Play is not
+# the build anyone ran — and a plugin that breaks on a point release breaks in
+# the release, not on the machine that could have caught it.
 
 # Gradle. Build caches, and a file of absolute paths to this machine's SDKs.
 .gradle/

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,10 +30,19 @@ Future<void> main() async {
   final speech = SpeechController(prefs);
   await _connectToTheLockScreen(speech);
 
-  // After the audio session exists, not before: audio_service installs one on
-  // iOS and SpeechController's own category adjusts it. The other order leaves
-  // whichever ran last in charge.
-  await speech.initialise();
+  // Started after the audio session exists, not before: audio_service installs
+  // one on iOS and SpeechController's own category adjusts it. The other order
+  // leaves whichever ran last in charge.
+  //
+  // Started, not awaited. Binding the speech engine takes as long as the device
+  // takes — on Android the service is bound asynchronously and the voice list
+  // can need a second of asking — and none of the first frame depends on it.
+  // Awaiting it here put that wait in front of the splash screen, and made a
+  // device whose engine never answers a device that never leaves it.
+  // SpeechController.start awaits the same future before it speaks, so the
+  // first reading still gets the reader's own voice; it is only the first
+  // frame that no longer waits for it.
+  unawaited(speech.initialise());
 
   runApp(
     ProviderScope(
@@ -53,6 +64,17 @@ Future<void> main() async {
 /// A failure here is not fatal. Without the service, speech still works
 /// everywhere in the app; it just stops when the system suspends us, which is
 /// exactly where the feature stood before this was wired up.
+/// Long enough for a device that is going to answer, short enough that one that
+/// is not still gets an app.
+///
+/// AudioService.init is the last thing between the process starting and the
+/// first frame, and it talks to a platform service that binds asynchronously.
+/// Without a bound on it, a service that never binds is indistinguishable from
+/// a hung app: no error, no frame, a black screen for as long as the reader is
+/// willing to wait. The catch below already treats a failure as survivable, so
+/// treating silence the same way is the only consistent thing to do.
+const _lockScreenTimeout = Duration(seconds: 8);
+
 Future<void> _connectToTheLockScreen(SpeechController speech) async {
   try {
     await AudioService.init(
@@ -73,8 +95,9 @@ Future<void> _connectToTheLockScreen(SpeechController speech) async {
         // audiobook app does anyway.
         androidStopForegroundOnPause: false,
       ),
-    );
+    ).timeout(_lockScreenTimeout);
   } catch (_) {
-    // No media session on this platform, or the service could not start.
+    // No media session on this platform, the service could not start, or it
+    // never answered. None of the three is a reason to have no app.
   }
 }
