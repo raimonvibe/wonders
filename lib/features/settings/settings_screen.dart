@@ -103,6 +103,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               max: 1.6,
               divisions: 15,
               label: '${(scale * 100).round()}%',
+              // Sliding only, for the reason given on _RateSlider: this list
+              // scrolls, and a tap on a full-width track is what a scroll that
+              // fell short of the touch slop turns into.
+              allowedInteraction: SliderInteraction.slideOnly,
               onChanged: ref.read(fontScaleProvider.notifier).set,
             ),
             ListTile(

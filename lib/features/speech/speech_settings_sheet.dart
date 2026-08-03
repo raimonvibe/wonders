@@ -83,6 +83,8 @@ class SpeechSettings extends ConsumerWidget {
           max: 2.0,
           divisions: 15,
           label: speech.pitch.toStringAsFixed(2),
+          // Sliding only — see the note on _RateSlider.
+          allowedInteraction: SliderInteraction.slideOnly,
           onChanged: controller.setPitch,
         ),
 
@@ -132,6 +134,16 @@ Future<void> showSpeechSettings(
 /// The engine's scale is not the same on the two platforms and is not
 /// meaningful on either — SpeechController turns this multiplier into whatever
 /// the device calls normal.
+///
+/// Sliding only, no tap. This whole column lives inside a scroll view — the
+/// More tab's list and the mini player's sheet both — and a track that reaches
+/// the full width of the screen is most of what a thumb lands on while
+/// scrolling past it. A flick shorter than the touch slop is delivered as a
+/// tap, and a tap on a `tapAndSlide` track jumps the value to wherever the
+/// finger was: scroll past this control carelessly and the reading is suddenly
+/// at 1.60×, with nothing on screen to say why. Sliding is a deliberate enough
+/// gesture that it never happens by accident, and it still works anywhere on
+/// the track, so nothing is lost but the misfire.
 class _RateSlider extends StatelessWidget {
   const _RateSlider({required this.speech, required this.controller});
 
@@ -148,6 +160,7 @@ class _RateSlider extends StatelessWidget {
           max: 2.0,
           divisions: 15,
           label: '${speech.rate.toStringAsFixed(2)}×',
+          allowedInteraction: SliderInteraction.slideOnly,
           onChanged: controller.setRate,
         ),
         ListTile(

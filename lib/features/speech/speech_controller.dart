@@ -226,6 +226,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   /// Called from main() after AudioService.init, so the audio session
   /// audio_service installs is in place before the iOS category below adjusts
   /// it. Idempotent, so a test or a second entry point can call it safely.
+  ///
+  /// Memoised, but only once it has something to show for itself: a run that
+  /// came back without a voice list is forgotten, so the next caller tries
+  /// again. See the end of [_init].
   Future<void> initialise() => _initialising ??= _init();
 
   Future<void> _init() async {
@@ -274,6 +278,24 @@ class SpeechController extends StateNotifier<SpeechState> {
     final voices = await _loadVoices();
     if (_disposed) return;
 
+    // An empty list is not necessarily the truth.
+    //
+    // Android binds the speech service asynchronously, and main() calls this
+    // before the first frame — the moment it is least likely to have finished.
+    // Lose that race and getVoices answers null rather than failing, so the
+    // memoised future would hold an empty picker for the life of the session:
+    // no voice to apply, and the reader stuck on whatever locale the engine
+    // defaults to, with their saved choice ignored. Dropping the future lets
+    // the next Listen ask again, by which time the service has bound.
+    //
+    // A platform that genuinely has no getVoices — desktop, some Android
+    // engines — simply answers empty a second time. The cost is one call per
+    // press, which is the right way round: a retry that is never needed is
+    // cheaper than a picker that is empty for good.
+    if (voices.isEmpty) _initialising = null;
+
+    // copyWith keeps the existing voiceId when [chosen] is null, so a failed
+    // load leaves the reader's saved preference in place for that retry.
     final chosen = pickDefaultVoice(voices, preferredId: state.voiceId);
     state = state.copyWith(voices: voices, voiceId: chosen?.id, ready: true);
     await _applySettings();
