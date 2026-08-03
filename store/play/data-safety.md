@@ -20,20 +20,24 @@ Kept verses, notes, reading position and settings are stored in the app's
 private storage and are **not** collected under this definition. Play is
 explicit that on-device-only processing is not collection.
 
-## The two network calls, and why neither is collection
+## The network calls: there are none
 
-**Google Fonts.** Inter, Merriweather and Playfair Display are fetched on first
-use and cached. This sends a request for a font file. No user data is attached.
-Declare nothing; mention it in the privacy policy, which
-`store/play/privacy-policy.md` does.
+The app **holds no `INTERNET` permission**. It cannot open a connection, which
+is a stronger answer to every question on this form than any promise about
+conduct.
 
-> If you would rather the app made no network call at all, bundle the three
-> families as assets and set `GoogleFonts.config.allowRuntimeFetching = false`.
-> That is the cleaner story for an app whose whole premise is offline reading,
-> and it costs a couple of megabytes.
+This changed on 3 August 2026. Until then the note here read that Inter,
+Merriweather and Playfair Display were fetched from Google Fonts on first use —
+the one call the app made. The three families now ship in `assets/fonts/` with
+`GoogleFonts.config.allowRuntimeFetching = false`, which is the suggestion this
+file used to carry, and `INTERNET` came out of the manifest with them. Checked
+against the merged manifest: no plugin in this tree declares it, so removing it
+from `android/app/src/main/AndroidManifest.xml` removes it.
 
 **url_launcher.** Opens the developer's own links from the More screen, only
-when tapped, and hands off to the browser. Nothing is transmitted by the app.
+when tapped. It hands the address to the browser through an Intent; the browser
+holds the permission and does the visiting. Nothing is transmitted by this app,
+and it could not transmit anything if it tried.
 
 ## Text to speech
 
@@ -50,7 +54,8 @@ explains it.
 | `POST_NOTIFICATIONS` | Playback controls while a passage is read aloud |
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Keeps the reading running off screen; Play asks for a justification video or description — "spoken-word playback of scripture with lock-screen controls" is the sanctioned use |
 | `WAKE_LOCK` | Required by audio_service for uninterrupted playback |
-| `INTERNET` | Merged in by plugins; used only for the font fetch and for opening links |
+
+`INTERNET` is **not** requested. It used to be, for the font fetch; see above.
 
 ## Content rating
 

@@ -30,7 +30,7 @@ class MakerFooter extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Made by Raimon Baudoin',
+            'Made by Raimon Baudoin — raimonvibe',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 6),

@@ -13,6 +13,7 @@ import '../speech/speakables.dart';
 import '../speech/speech_settings_sheet.dart';
 import 'licenses_tile.dart';
 import 'maker_footer.dart';
+import 'privacy_tile.dart';
 
 /// Theme, reading size, and what the text is.
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -138,6 +139,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 'against the passage it cites.',
               ),
             ),
+            const PrivacyTile(),
             const LicensesTile(),
 
             const Divider(),

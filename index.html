@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Wonders and Hope</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1E232C;
+    --ink-soft: #3A4250;
+    --meta: #6D7480;
+    --paper: #FBF8F2;
+    --paper-deep: #F1ECDE;
+    --indigo: #263B5E;
+    --indigo-deep: #1B2C46;
+    --gold: #A9812E;
+    --gold-soft: #C9A94F;
+    --rule: #E1D9C4;
+    --max-w: 700px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    background-image:
+      radial-gradient(1px 1px at 12% 8%, rgba(169,129,46,0.35) 0, transparent 60%),
+      radial-gradient(1px 1px at 78% 4%, rgba(169,129,46,0.28) 0, transparent 60%),
+      radial-gradient(1.5px 1.5px at 92% 14%, rgba(38,59,94,0.22) 0, transparent 60%),
+      radial-gradient(1px 1px at 35% 3%, rgba(38,59,94,0.18) 0, transparent 60%);
+    background-repeat: no-repeat;
+    color: var(--ink);
+    font-family: 'Merriweather', Georgia, serif;
+    font-weight: 300;
+    line-height: 1.8;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  .wrap {
+    max-width: var(--max-w);
+    margin: 0 auto;
+    padding: 88px 28px 96px;
+  }
+
+  /* ---------- Header ---------- */
+
+  header {
+    margin-bottom: 64px;
+  }
+
+  .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 11.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 22px;
+  }
+
+  .eyebrow::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: clamp(32px, 5vw, 44px);
+    line-height: 1.15;
+    color: var(--indigo-deep);
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .app-name {
+    font-style: italic;
+    color: var(--indigo);
+  }
+
+  .subtitle {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14.5px;
+    color: var(--meta);
+    margin: 14px 0 0;
+  }
+
+  .subtitle strong {
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  /* A note about what this policy used to say. Set quieter than the clause it
+     follows, and ruled off, so it reads as history rather than as terms. */
+  .note {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.7;
+    color: var(--meta);
+    border-left: 2px solid var(--rule);
+    padding: 2px 0 2px 16px;
+    margin: 22px 0 0;
+  }
+
+  /* ---------- Body typography ---------- */
+
+  h2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-weight: 600;
+    font-size: 23px;
+    color: var(--indigo-deep);
+    margin: 0 0 18px;
+    letter-spacing: -0.005em;
+  }
+
+  p {
+    font-size: 16.5px;
+    color: var(--ink-soft);
+    margin: 0 0 18px;
+  }
+
+  p:last-child { margin-bottom: 0; }
+
+  strong {
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  a {
+    color: var(--indigo);
+    text-decoration: underline;
+    text-decoration-color: var(--gold-soft);
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+    transition: color 0.15s ease, text-decoration-color 0.15s ease;
+  }
+
+  a:hover {
+    color: var(--gold);
+    text-decoration-color: var(--gold);
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ul {
+    margin: 0 0 18px;
+    padding-left: 0;
+    list-style: none;
+  }
+
+  li {
+    position: relative;
+    padding-left: 26px;
+    margin-bottom: 14px;
+    font-size: 16.5px;
+    color: var(--ink-soft);
+  }
+
+  li::before {
+    content: "✦";
+    position: absolute;
+    left: 0;
+    top: 1px;
+    font-size: 11px;
+    color: var(--gold-soft);
+  }
+
+  ol {
+    margin: 0 0 18px;
+    padding-left: 22px;
+  }
+
+  ol li {
+    padding-left: 6px;
+  }
+
+  ol li::before { content: none; }
+
+  /* ---------- Sections & the asterism divider ---------- */
+
+  section {
+    margin-bottom: 46px;
+  }
+
+  .divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin: 46px 0;
+    color: var(--gold-soft);
+    user-select: none;
+  }
+
+  .divider::before,
+  .divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--rule);
+    max-width: 180px;
+  }
+
+  .divider span {
+    font-size: 13px;
+    letter-spacing: 0.3em;
+  }
+
+  /* ---------- Contact card ---------- */
+
+  .contact-card {
+    background: var(--paper-deep);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 28px 30px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .contact-card::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: linear-gradient(180deg, var(--gold-soft), var(--indigo));
+  }
+
+  .contact-card h2 {
+    font-size: 19px;
+    margin-bottom: 10px;
+  }
+
+  .contact-card p {
+    margin: 0;
+    font-size: 16px;
+  }
+
+  .contact-card a {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 15.5px;
+  }
+
+  /* ---------- Footer ---------- */
+
+  footer {
+    margin-top: 72px;
+    padding-top: 26px;
+    border-top: 1px solid var(--rule);
+    font-family: 'Inter', sans-serif;
+    font-size: 12.5px;
+    letter-spacing: 0.03em;
+    color: var(--meta);
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ---------- Responsive ---------- */
+
+  @media (max-width: 560px) {
+    .wrap { padding: 56px 20px 72px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 20px; }
+    .contact-card { padding: 22px; }
+    footer { flex-direction: column; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    a { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+
+    <header>
+      <div class="eyebrow">Privacy Policy</div>
+      <h1><span class="app-name">Wonders and Hope</span></h1>
+      <p class="subtitle">A Bible reading app published by <strong>Raimon Baudoin (raimonvibe)</strong> &nbsp;·&nbsp; Last updated <strong>3 August 2026</strong></p>
+    </header>
+
+    <section>
+      <h2>The short version</h2>
+      <p>The app collects nothing. There is no account, no sign-in, no analytics, no advertising, and no tracking of any kind. Nothing you do in the app is sent anywhere, because there is nowhere for it to be sent — the developer operates no server for this app.</p>
+    </section>
+
+    <div class="divider"><span>✦ ✦ ✦</span></div>
+
+    <section>
+      <h2>What stays on your device</h2>
+      <p>Everything the app remembers is stored only on your device, in the app's own private storage, and is deleted when you uninstall the app:</p>
+      <ul>
+        <li><strong>Verses you keep</strong> — the reference, a short excerpt, the colour you chose, and any note you wrote.</li>
+        <li><strong>Where you were reading</strong> — the last wonder and the last chapter you opened, and your place in the guided tour.</li>
+        <li><strong>Your settings</strong> — reading size, colour theme, and the voice, speed and pitch used for reading aloud.</li>
+      </ul>
+      <p>None of this is transmitted, backed up to the developer, or shared. If you use the export feature to save or send your kept verses, that file goes wherever <em>you</em> choose to send it; the app has no copy of it and no knowledge of where it went.</p>
+    </section>
+
+    <section>
+      <h2>What the app does over the internet</h2>
+      <p>Nothing. The app holds no internet permission at all, so it cannot open a connection even if it were asked to.</p>
+      <p>All 66 books of the World English Bible, all 178 wonder cards, and the three typefaces the app is set in — Inter, Merriweather and Playfair Display — ship inside the app itself. Reading, searching, listening and sharing all work with the device in flight mode, and look exactly the same as they do online.</p>
+      <p>One thing leaves the app, and only when you ask it to:</p>
+      <ol>
+        <li><strong>Links you tap.</strong> The links to the developer's own pages, on the More screen, hand the address to your browser or to the relevant app. From that point your browser is doing the visiting, under its own privacy policy, not this app.</li>
+      </ol>
+      <p class="note">Earlier versions of this app fetched the typefaces from Google Fonts on first use. They no longer do; the fonts are bundled, and the permission that made the request possible has been removed.</p>
+    </section>
+
+    <section>
+      <h2>Reading aloud</h2>
+      <p>Reading aloud uses the text-to-speech engine already installed on your device. The text is handed to that engine locally. Some devices are configured to use a network-based voice — whether that happens, and what it implies, is governed by your device's own speech settings and the privacy policy of that engine's provider (for example, Google or Samsung). The app does not choose this for you and receives nothing back but audio.</p>
+    </section>
+
+    <div class="divider"><span>✦ ✦ ✦</span></div>
+
+    <section>
+      <h2>Permissions</h2>
+      <ul>
+        <li><strong>Notifications</strong> — used only to show the playback controls while a passage is being read aloud, so you can pause it from the lock screen. Declining costs you those controls and nothing else.</li>
+        <li><strong>Foreground service (media playback)</strong> — keeps the reading going when the app is not on screen.</li>
+      </ul>
+      <p>The app requests no access to your contacts, camera, microphone, location, files, or any other personal data.</p>
+    </section>
+
+    <section>
+      <h2>Children</h2>
+      <p>The app collects no data from anyone, including children. There is nothing to delete, because nothing is gathered.</p>
+    </section>
+
+    <section>
+      <h2>Changes</h2>
+      <p>If this policy ever changes, the revised version will be posted at this address and the date above updated.</p>
+    </section>
+
+    <section class="contact-card">
+      <h2>Contact</h2>
+      <p>Questions about this policy: <a href="mailto:info@raimonvibe.com">info@raimonvibe.com</a></p>
+    </section>
+
+    <footer>
+      <span>© 2026 Raimon Baudoin (raimonvibe)</span>
+      <span>Wonders and Hope — Privacy Policy</span>
+    </footer>
+
+  </div>
+</body>
+</html>

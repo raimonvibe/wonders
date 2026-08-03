@@ -1,9 +1,22 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- google_fonts fetches typefaces at runtime; without this, release
-         builds fall back to platform fonts after a first-run network miss. -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- No INTERNET, deliberately.
+         =============================
+         This was here for one reason: google_fonts fetched the typefaces at
+         runtime. They ship in assets/fonts now and allowRuntimeFetching is off,
+         so nothing in this app opens a socket. Nothing else needs it either —
+         url_launcher hands a URL to the browser through an Intent, and the
+         browser holds the permission; flutter_tts's network voices are
+         synthesised in the engine's own process, not ours.
+
+         Checked against the merged manifest rather than assumed: no plugin in
+         this tree declares INTERNET, so removing it here removes it.
+
+         It is worth more than the line it saves. "Collects nothing" is a promise
+         about conduct; an app that cannot reach the network is a promise the
+         system enforces, and it is the shortest possible answer on Play's data
+         safety form. -->
 
     <!-- Read aloud, once the app is no longer on screen. audio_service runs the
          reading in a foreground service so the system does not suspend it, and

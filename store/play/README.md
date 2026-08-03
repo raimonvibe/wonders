@@ -91,9 +91,16 @@ Everything below is prepared except the four that need a browser or a decision.
 - [ ] Target audience: adult bands, not child-directed → `data-safety.md`
 - [ ] Data safety form → answers in `data-safety.md` (short version: collects
       nothing)
-- [ ] **Host `privacy-policy.md` somewhere public** and paste the URL. This is
-      the one remaining hard blocker; raimonvibe.eu or a GitHub Pages file will
-      do.
+- [x] **Privacy policy hosted** at
+      <https://privacy-policy-wonders-and-hope.vercel.app/> — paste that URL
+      into the Console's designated field. The page's source is `index.html` in
+      the repository root; edit and redeploy it there.
+- [x] **Privacy policy inside the app** — More → Privacy policy, linking to the
+      same URL. Play asks for it in *both* places and the in-app half is the one
+      people miss: *"All apps must post a privacy policy link in the designated
+      field within Play Console, and a privacy policy link or text within the app
+      itself."* It is not conditional on collecting data — the same policy says
+      apps that access no personal data must still have one.
 - [ ] Foreground service declaration: `mediaPlayback`, justified as
       "spoken-word playback of scripture with lock-screen controls"
 - [ ] Countries / pricing (free)

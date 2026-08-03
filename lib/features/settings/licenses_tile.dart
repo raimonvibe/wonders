@@ -36,7 +36,8 @@ class LicensesTile extends StatelessWidget {
         // the scripture is nobody's, and the typefaces are somebody else's on
         // terms that are met by shipping them unchanged.
         applicationLegalese:
-            '© 2026 Raimon Baudoin. The application code is MIT licensed.\n\n'
+            '© 2026 Raimon Baudoin (raimonvibe). The application code is MIT '
+            'licensed.\n\n'
             'Scripture is the World English Bible, in the public domain. The '
             'typefaces are under the SIL Open Font License 1.1 and ship '
             'unmodified.',
