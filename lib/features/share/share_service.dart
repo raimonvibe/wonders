@@ -38,10 +38,42 @@ Rect? shareOrigin(BuildContext context) {
 }
 
 class ShareService {
-  const ShareService({required this.siteLabel});
+  const ShareService({required this.siteLabel, required this.link});
 
   /// Printed on every image. The one piece of branding.
   final String siteLabel;
+
+  /// Where the words beside the image point.
+  ///
+  /// Separate from [siteLabel] because the two halves of a share are read in
+  /// different ways. The picture is looked at, so it carries a name; the
+  /// message is a line of text in somebody's chat app, where the useful thing
+  /// is something to tap.
+  ///
+  /// **At launch this becomes the Play listing:**
+  /// `https://play.google.com/store/apps/details?id=com.raimonvibe.wonders`
+  /// — an address fixed by the applicationId, which cannot change, so it will
+  /// never need changing again.
+  ///
+  /// It is not that yet. A closed-testing app has no public listing and that
+  /// URL returns 404, and a dead link in a stranger's chat reads as broken in a
+  /// way that no link at all does not. Until the app reaches open testing or
+  /// production this points at the web reader, which is live and says the same
+  /// things.
+  final String link;
+
+  /// The words that travel beside the image.
+  ///
+  /// A platform that strips the picture — or a reader who saves it and forgets
+  /// where it came from — still gets the reference, the wonder's name, and
+  /// somewhere to go.
+  ///
+  /// Pulled out of [shareWonder] so it can be read in a test. Everything else
+  /// in that method needs a platform channel; this is the part with a decision
+  /// in it.
+  @visibleForTesting
+  String messageFor(Wonder wonder) =>
+      '${wonder.quoteRef} — ${wonder.title}\n$link';
 
   /// 3× so the text stays crisp wherever the image is opened.
   static const double _pixelRatio = 3.0;
@@ -62,9 +94,7 @@ class ShareService {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile(file.path, mimeType: 'image/png')],
-        // The reference travels as text too, so a platform that strips the
-        // image still says where the words came from.
-        text: '${wonder.quoteRef} — ${wonder.title}\n$siteLabel',
+        text: messageFor(wonder),
         subject: wonder.title,
         sharePositionOrigin: origin,
       ),

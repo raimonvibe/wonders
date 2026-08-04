@@ -183,7 +183,13 @@ class _WonderDetailScreenState extends ConsumerState<WonderDetailScreen> {
   }
 
   Future<void> _share(BuildContext context, Wonder wonder) async {
-    const service = ShareService(siteLabel: 'Play Store App “Wonders”');
+    const service = ShareService(
+      siteLabel: 'Play Store App “Wonders”',
+      // Swap for the Play listing the day this leaves closed testing:
+      // https://play.google.com/store/apps/details?id=com.raimonvibe.wonders
+      // It 404s until then — see ShareService.link.
+      link: 'https://bible-wonders-seven.vercel.app',
+    );
     final messenger = ScaffoldMessenger.of(context);
     try {
       await service.shareWonder(context, wonder);
