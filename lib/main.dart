@@ -122,7 +122,7 @@ Future<void> _connectToTheLockScreen(SpeechController speech) async {
     await AudioService.init(
       builder: () => SpeechAudioHandler(speech),
       config: const AudioServiceConfig(
-        androidNotificationChannelId: 'com.raimonvibe.bible_wonders.speech',
+        androidNotificationChannelId: 'com.raimonvibe.wonders.speech',
         androidNotificationChannelName: 'Read aloud',
         androidNotificationChannelDescription:
             'Controls for the passage being read aloud.',

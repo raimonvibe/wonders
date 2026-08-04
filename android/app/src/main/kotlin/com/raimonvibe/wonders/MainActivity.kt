@@ -1,4 +1,4 @@
-package com.raimonvibe.bible_wonders
+package com.raimonvibe.wonders
 
 import android.Manifest
 import android.content.pm.PackageManager

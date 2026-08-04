@@ -50,16 +50,52 @@ Also available: full-device diagonals in `screenshots/diagonal/`, raw flats in `
 
 ## Suggested store text
 
-**App name (30 chars):** `Wonders and Hope`
+**App name (30 chars):** `Wonders and Hope: Bible`
 
 > This is the *store listing* title and is deliberately not the same as the
 > launcher label, which is `Wonders` (`android/app/src/main/res/values/strings.xml`
 > and `CFBundleDisplayName`). A launcher gives an icon about ten to twelve
 > characters before it ellipsizes, so the full name arrived as "Wonders and…".
 > The two fields are unrelated — do not "fix" the mismatch.
+>
+> The `: Bible` is there to be searched for. The title is the strongest signal
+> Play's search has, and neither "Bible" nor "miracles" appeared anywhere in
+> it. 23 of the 30 characters, which leaves room and stays well clear of
+> keyword stuffing.
+
+## Package name — settled, and permanent
+
+`com.raimonvibe.wonders`, on both platforms.
+
+Chosen before the first upload, which was the only moment it could be: an
+`applicationId` cannot be changed once an app is published. Renaming after
+that means a new listing, and the reviews, installs and ratings do not come
+with it.
+
+It replaced `com.raimonvibe.bible_wonders` on Android and
+`com.raimonvibe.bibleWonders` on iOS — which had drifted apart from each
+other, and would have gone on drifting.
+
+Not to be confused with the Dart package name in `pubspec.yaml`, which is
+still `bible_wonders` and has to stay: every `package:bible_wonders/…` import
+in `test/` resolves through it, and it is invisible outside the repository.
 
 **Short description (80 chars):**
-`178 Bible wonders — each with the passage open beside you.`
+`178 Bible wonders and miracles — each with the passage open beside you.`
+
+> 71 of the 80. The spare characters went on "miracles" rather than on
+> decoration: Play indexes the title, the short description and the full
+> description for search, and that word appeared in none of them.
+>
+> **No emoji anywhere in this listing.** In the title they are not allowed —
+> Play's metadata policy bars emoji, emoticons and repeated special characters
+> from the title, icon and developer name. In the descriptions they are
+> allowed, and are still wrong here: a screen reader announces an emoji by
+> name, and this is an app whose central feature is reading aloud and whose
+> code carries a `semanticFormatterCallback` so that a blind reader does not
+> hear "one point four". They also earn no search weight while costing
+> characters, at 2 or more apiece. The em dash is not an emoji and is fine; so
+> are the `•` bullets below, which are structural.
 
 **Full description:**
 ```
@@ -81,7 +117,7 @@ Built for quiet reading, not for noise.
 
 Everything below is prepared except the four that need a browser or a decision.
 
-- [ ] Create app in Play Console (`com.raimonvibe.bible_wonders`)
+- [ ] Create app in Play Console (`com.raimonvibe.wonders`)
 - [ ] **Enrol in Play App Signing** — do this at first upload. It is the only
       recovery path for a lost upload key and cannot be added afterwards.
 - [ ] Upload `store/play/upload/app-release.aab` to a closed testing track first
