@@ -132,10 +132,46 @@ class ShareService {
     for (var attempt = 0; attempt < 10; attempt++) {
       await WidgetsBinding.instance.endOfFrame;
       final object = key.currentContext?.findRenderObject();
-      if (object is RenderRepaintBoundary && !object.debugNeedsPaint) {
-        return object;
-      }
+      if (object is! RenderRepaintBoundary || !object.hasSize) continue;
+      if (_needsPaint(object)) continue;
+
+      // One more frame. In a release build [_needsPaint] cannot answer and
+      // says no, so without this the capture would happen on the first frame
+      // the boundary had a size — which is a frame too early on a cold start,
+      // and a blank image is the failure this method exists to prevent.
+      await WidgetsBinding.instance.endOfFrame;
+      return object;
     }
     throw StateError('The share card never finished painting.');
+  }
+
+  /// Whether [boundary] is still waiting to be painted — in debug, at least.
+  ///
+  /// `RenderObject.debugNeedsPaint` assigns its result *inside an assert*:
+  ///
+  /// ```dart
+  /// bool get debugNeedsPaint {
+  ///   late bool result;
+  ///   assert(() { result = _needsPaint; return true; }());
+  ///   return result;
+  /// }
+  /// ```
+  ///
+  /// A release build strips asserts, so the local is never assigned and the
+  /// getter throws `LateInitializationError: Local 'result' has not been
+  /// initialized`. Flutter's own documentation says so plainly — "In release
+  /// builds, this throws" — and this method used to call it directly, which
+  /// meant sharing a wonder worked in every test and on every debug build and
+  /// failed on every device anyone would actually install this on.
+  ///
+  /// Reading it inside an assert is the only safe way to read it: the call
+  /// disappears with the assert, and release falls back to waiting a frame.
+  static bool _needsPaint(RenderRepaintBoundary boundary) {
+    var needsPaint = false;
+    assert(() {
+      needsPaint = boundary.debugNeedsPaint;
+      return true;
+    }());
+    return needsPaint;
   }
 }
