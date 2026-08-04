@@ -209,13 +209,21 @@ Everything below is prepared except the four that need a browser or a decision.
       / all ages everywhere, **no content descriptors**. Every answer and the
       reasoning behind it is in `data-safety.md`, including the rating table, so
       the next submission is a transcription rather than a re-derivation
-- [ ] Target audience: adult bands, not child-directed → `data-safety.md`
-- [ ] Data safety form → answers in `data-safety.md` (short version: collects
-      nothing)
+- [x] **Target audience** → **13-15, 16-17, 18+**. Nothing under 13. Earlier
+      drafts of this file said "adult bands", which reads as 18-only and is
+      wrong — see `data-safety.md`
+- [x] **Data safety form** → done. The store card reads "No data collected"
+      and "No data shared with third parties". Answers and evidence in
+      `data-safety.md`
 - [x] **Privacy policy hosted** at
       <https://privacy-policy-wonders-and-hope.vercel.app/> — paste that URL
       into the Console's designated field. The page's source is `index.html` in
-      the repository root; edit and redeploy it there.
+      the repository root; edit and redeploy it there. Fetched and checked on
+      4 August 2026: it loads, names the app and the publisher, says the app
+      collects nothing, covers text-to-speech, carries a contact address and is
+      dated. Worth re-fetching before each submission — Play rejects a dead
+      link, and a policy URL is the easiest thing in a listing to stop
+      noticing.
 - [x] **Privacy policy inside the app** — More → Privacy policy, linking to the
       same URL. Play asks for it in *both* places and the in-app half is the one
       people miss: *"All apps must post a privacy policy link in the designated

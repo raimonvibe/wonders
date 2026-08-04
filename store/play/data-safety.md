@@ -214,6 +214,40 @@ It is easy to miss precisely because the correct answer is nothing at all.
 
 ## Target audience
 
-Not directed at children. Select the adult age bands. Declaring a child audience
-would pull the app into Families policy and require a content review it does not
-need.
+**13-15, 16-17 and 18+. Nothing below 13.**
+
+This file used to say "the adult age bands", which is the wrong shorthand and
+reads as 18-only. Play's dividing line for children is **under 13**, so the two
+teen bands are not child bands and do not trigger anything.
+
+- **Under 13 pulls the app into Families policy** — content review, stricter
+  privacy requirements, ads restrictions and a design standard aimed at
+  children. This app would probably pass all of it, collecting nothing and
+  carrying no ads, but it would be a review taken on for an audience it was not
+  built for. The reading level and the interface are adult.
+- **The teen bands belong.** Teenagers read scripture, and the app is rated
+  Everyone / PEGI 3 with no content descriptors. Leaving them out would be a
+  false statement about who it is for.
+- **18+ alone is a trap.** The Console warns on that screen that some
+  selections, "such as users over 18", can restrict availability. An adults-only
+  declaration on a Bible reader buys nothing and costs reach.
+
+**The follow-up question:** whether the store listing could unintentionally
+appeal to children — bright colours, cartoon characters, mascots. **No.** The
+icon, the feature graphic and all eight screenshots are dark-green typographic
+UI with serif scripture. There is nothing playful in any of them.
+
+## Data safety — submitted
+
+Done 4 August 2026. The store card users will see reads:
+
+> **No data collected.** The developer says this app doesn't collect user data.
+>
+> **No data shared with third parties.** The developer says this app doesn't
+> share user data with other companies or organisations.
+
+Three things now say the same thing, which is the point: the declaration on the
+form, the privacy policy at
+<https://privacy-policy-wonders-and-hope.vercel.app/>, and the release manifest
+that holds no `INTERNET` permission. The first two are promises. The third is
+the system enforcing them.
