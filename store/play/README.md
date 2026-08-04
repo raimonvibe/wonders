@@ -148,13 +148,35 @@ PKCS12, valid to 2053. `android/key.properties` points at it; see
 `android/key.properties.example` for the fingerprint and how to verify a build.
 
 The bundle in `upload/` is signed with it — confirmed, not debug-signed.
+Rebuilt 4 August 2026 under `com.raimonvibe.wonders`; the previous one carried
+the old package name and could not have been uploaded.
+
+Verified at build time rather than assumed:
+
+```
+Owner:   CN=Wonders and Hope, OU=Mobile, O=Raimonvibe, L=Amsterdam, ST=NH, C=NL
+SHA-256: F7:98:A5:4E:37:49:53:92:93:90:8A:22:33:76:0B:00:
+         B8:AE:55:B0:E7:DE:A2:9C:38:A3:A2:3A:DA:21:78:1D
+package  com.raimonvibe.wonders   versionCode 2   versionName 1.0.0
+```
+
+The fingerprint matches the one recorded in `android/key.properties.example`.
+An `Owner` of `CN=Android Debug` would have meant `key.properties` was missing
+and Gradle had fallen back to debug signing — silently, producing a
+normal-looking bundle that Play rejects.
 
 **Back up that .jks and its password in two places before you upload anything.**
 
 ## Version
 
-`pubspec.yaml` is at **1.0.0+1** (`versionName` / `versionCode`).
-Bump both before each Play upload (`1.0.1+2`, etc.).
+`pubspec.yaml` is at **1.0.0+2** (`versionName` / `versionCode`).
 
 Play rejects a `versionCode` it has already seen, so the bump is per *upload*,
-not per release — a rejected or replaced bundle still burns its number.
+not per release — a rejected or replaced bundle still burns its number. Bump
+the build number every time; bump the `versionName` only when the release is
+one users should be able to tell apart.
+
+The first upload is `1.0.0+2` rather than `1.0.1+2`: `versionName` is what a
+user sees, and shipping the first release as 1.0.1 says a 1.0.0 existed. The
+build number went to 2 so the bundle could not be confused with the stale
+`1.0.0+1` it replaced, which was built under the old package name.
