@@ -113,6 +113,75 @@ the chapter they happened in right beside the card.
 Built for quiet reading, not for noise.
 ```
 
+## Release notes ("What's new")
+
+500 characters per language, one `<xx-XX>` block each. Play does not translate
+them; an `en-US` block is shown everywhere, which is the whole of it — see
+"Countries" below.
+
+**Emoji are allowed here**, unlike in the title, where Play's metadata policy
+bars them outright. Two or three, not a scatter: the notes are read aloud by a
+screen reader like everything else, and this app does not shout. See the note
+under the short description for the fuller reasoning.
+
+The offline line earns its characters. It is the app's least ordinary property
+and the only claim on the listing the system itself enforces — there is no
+`INTERNET` permission, so it cannot be quietly untrue one release later.
+
+### Closed testing
+
+```
+<en-US>
+📖 The first build of Wonders and Hope.
+
+178 of the Bible's miracles, each with the passage open right beside it.
+
+• Browse by theme, era, or take the guided tour
+• The whole Bible (World English Bible)
+• Listen aloud, even with the screen off 🎧
+• Keep verses with a colour and a note
+• Share a wonder as a quote image
+
+Works fully offline. No account, no ads, nothing collected.
+
+Thank you for testing — tell me anything that feels off. 🙏
+</en-US>
+```
+
+441 characters.
+
+### Production
+
+```
+<en-US>
+📖 The first release of Wonders and Hope.
+
+178 of the Bible's miracles, each with the passage open right beside it.
+
+• Browse by theme, era, or take the guided tour
+• The whole Bible (World English Bible)
+• Listen aloud, even with the screen off 🎧
+• Keep verses with a colour and a note
+• Share a wonder as a quote image
+
+Works fully offline. No account, no ads, and nothing about you leaves your phone.
+</en-US>
+```
+
+417 characters.
+
+## Countries
+
+All available, on every track.
+
+The listing is `en-US` only and stays that way. Play shows it as written
+wherever the app is available rather than translating it, so a reader in Japan
+sees English — which is the right outcome here, because the app is English
+only: the World English Bible is the one text it ships.
+
+Countries and pricing are set **per track**. Setting production to every
+country does not apply to the closed test, or the other way round. Check both.
+
 ## Console checklist
 
 Everything below is prepared except the four that need a browser or a decision.
@@ -120,9 +189,16 @@ Everything below is prepared except the four that need a browser or a decision.
 - [ ] Create app in Play Console (`com.raimonvibe.wonders`)
 - [ ] **Enrol in Play App Signing** — do this at first upload. It is the only
       recovery path for a lost upload key and cannot be added afterwards.
-- [ ] Upload `store/play/upload/app-release.aab` to a closed testing track first
+- [ ] Upload `store/play/upload/app-release.aab` to a closed testing track
+      first — `1.0.0+2`, signed and verified, see **Version** and **Signing**
+- [ ] Invite testers → `tester-invite.md`. A personal developer account needs
+      **12 testers opted in for 14 continuous days** before production access
+      is granted, counted on testers still enrolled rather than invited
 - [ ] Attach icon, feature graphic, and the half-cut screenshots (01→08)
-- [ ] Paste short + full description (below)
+- [ ] Paste app name, short + full description (above)
+- [ ] Paste release notes → **Release notes**, above. Use the closed-testing
+      block for the test track and the production block for production; they
+      differ by two lines and the difference matters to whoever reads them.
 - [ ] Content rating questionnaire → answers in `data-safety.md`
 - [ ] Target audience: adult bands, not child-directed → `data-safety.md`
 - [ ] Data safety form → answers in `data-safety.md` (short version: collects
@@ -139,7 +215,8 @@ Everything below is prepared except the four that need a browser or a decision.
       apps that access no personal data must still have one.
 - [ ] Foreground service declaration: `mediaPlayback`, justified as
       "spoken-word playback of scripture with lock-screen controls"
-- [ ] Countries / pricing (free)
+- [ ] Countries / pricing (free) → all available, **per track** — see
+      **Countries**, above
 
 ## Signing — settled
 
