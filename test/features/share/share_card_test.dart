@@ -33,8 +33,29 @@ void main() {
         data: const MediaQueryData(),
         child: Directionality(
           textDirection: TextDirection.ltr,
-          child: RepaintBoundary(
-            child: ShareCard(wonder: wonder, siteLabel: 'bible-wonders.app'),
+          // The card ships inside this, so it is tested inside it.
+          //
+          // ShareService mounts the card in the *root* overlay, which sits
+          // above every Scaffold, and MaterialApp installs Flutter's
+          // `_errorTextStyle` there as the DefaultTextStyle that Material
+          // normally replaces — red monospace with a yellow double underline.
+          // Nothing replaced it, so every line of every shared image came out
+          // struck through in yellow, and this golden passed the whole time
+          // because a bare MediaQuery gives `DefaultTextStyle.fallback()`,
+          // which is clean.
+          //
+          // Reproducing the hostile style here is what makes the golden mean
+          // something: remove ShareCard's own DefaultTextStyle and this test
+          // fails, which is exactly what should have happened the first time.
+          child: DefaultTextStyle(
+            style: const TextStyle(
+              decoration: TextDecoration.underline,
+              decorationColor: Color(0xFFFFFF00),
+              decorationStyle: TextDecorationStyle.double,
+            ),
+            child: RepaintBoundary(
+              child: ShareCard(wonder: wonder, siteLabel: 'bible-wonders.app'),
+            ),
           ),
         ),
       ),
