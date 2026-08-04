@@ -54,19 +54,80 @@ explains it.
 | `POST_NOTIFICATIONS` | Playback controls while a passage is read aloud |
 | `FOREGROUND_SERVICE` + `FOREGROUND_SERVICE_MEDIA_PLAYBACK` | Keeps the reading running off screen; Play asks for a justification video or description — "spoken-word playback of scripture with lock-screen controls" is the sanctioned use |
 | `WAKE_LOCK` | Required by audio_service for uninterrupted playback |
+| `<applicationId>.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` | Nothing to justify. AndroidX generates it because audio_service registers a receiver at runtime; it is `signature`-level and scoped to this package, so no other app can hold it and no user is ever asked for it. It appears in the Console's permission list — expect it rather than go looking for what added it. |
 
 `INTERNET` is **not** requested. It used to be, for the font fetch; see above.
+
+## Verified against the release build, not the source
+
+Read out of the built artifact on 4 August 2026, because a claim signed on a
+form should be checked against what ships rather than against what the manifest
+appears to say:
+
+```
+$ aapt2 dump badging build/app/outputs/flutter-apk/app-release.apk
+package: name='com.raimonvibe.wonders'
+application-label:'Wonders'
+uses-permission: name='android.permission.WAKE_LOCK'
+uses-permission: name='android.permission.FOREGROUND_SERVICE'
+uses-permission: name='android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK'
+uses-permission: name='android.permission.POST_NOTIFICATIONS'
+uses-permission: name='com.raimonvibe.wonders.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION'
+```
+
+No `INTERNET`. That is the whole of it, merged manifest included.
+
+**A debug or profile build will show `INTERNET`, and that is not a problem.**
+`android/app/src/debug/AndroidManifest.xml` and `android/app/src/profile/`
+each add it so the Flutter tool can reach the running app for hot reload. Only
+the release manifest reaches Play. Anyone checking this claim against an APK
+built from the IDE will find the permission and think this file is wrong — it
+is not; check `app-release.apk`.
+
+Worth repeating at each release, since it is one command:
+
+```bash
+flutter build apk --release
+aapt2 dump badging build/app/outputs/flutter-apk/app-release.apk | grep uses-permission
+```
+
+## Two things the form does not ask about, and why
+
+**share_plus.** Sharing a wonder as an image hands data to another app. It is
+user-initiated, the target is chosen by the user in the system sheet, and
+nothing is transmitted by this app. Not collection; declare nothing.
+
+**No analytics, ads or crash reporting.** The full dependency list is riverpod,
+go_router, sqflite, path, path_provider, shared_preferences, flutter_tts,
+audio_service, share_plus, google_fonts, url_launcher, font_awesome_flutter and
+scrollable_positioned_list. Nothing there phones anywhere, and without
+`INTERNET` nothing could.
 
 ## Content rating
 
 Answer the questionnaire honestly and the app lands at **Everyone / PEGI 3**:
-no violence, no sexual content, no profanity, no gambling, no user-generated
-content, no communication between users, no purchases, no ads, no location
-sharing.
+no sexual content, no profanity, no gambling, no user-generated content, no
+communication between users, no purchases, no ads, no location sharing.
 
-The one question worth pausing on is whether religious content needs declaring.
-It does not — the questionnaire has no such category, and public-domain
-scripture is not "sensitive content" in Play's sense.
+Whether religious content needs declaring: it does not. The questionnaire has
+no such category, and public-domain scripture is not "sensitive content" in
+Play's sense.
+
+**Violence is the one answer not to give by reflex.** This file used to say
+"no violence" flatly, and that is not quite true of the material: the app
+carries scripture in which Pharaoh's army drowns, and the Red Sea card says so
+in as many words — "The same waters that opened for Israel closed again over
+the army chasing them."
+
+IARC's violence questions are about *depictions* — graphic, realistic,
+interactive, on screen. Non-graphic narrative in a religious text is not what
+they are asking about, which is why Bible apps sit at Everyone / PEGI 3 as a
+matter of course. So the answer is almost certainly still no.
+
+But if the questionnaire offers a non-graphic or textual-reference option,
+take it. A rating that comes back one band higher costs nothing. A
+misdeclaration found later is grounds for removal, and the questionnaire is
+signed under the same declaration as the data safety form.
 
 ## Target audience
 
