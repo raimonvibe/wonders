@@ -99,17 +99,23 @@ class SpeechSettings extends ConsumerWidget {
 
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          // Never disabled. This used to go grey during a reading and explain
+          // itself with "Stop the reading to try a voice" — a button whose
+          // label is an instruction to go and do something else, on a sheet
+          // with nothing to do it with. It now does the something else: a
+          // reading is paused, not stopped, so the reader keeps their place and
+          // the mini player behind this sheet is one tap from carrying on.
           child: OutlinedButton.icon(
-            onPressed: speech.isIdle
-                ? () => controller.preview(
-                      'In the beginning, God created the heavens and the earth.',
-                    )
-                : null,
+            onPressed: () => controller.preview(
+              'In the beginning, God created the heavens and the earth.',
+            ),
             icon: const Icon(Icons.volume_up_outlined),
+            // Said before it happens, because pausing something the reader is
+            // listening to should not be a surprise.
             label: Text(
-              speech.isIdle
-                  ? 'Hear this voice'
-                  : 'Stop the reading to try a voice',
+              speech.isPlaying
+                  ? 'Pause the reading and hear this voice'
+                  : 'Hear this voice',
             ),
           ),
         ),

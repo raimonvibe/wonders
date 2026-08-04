@@ -617,7 +617,20 @@ class SpeechController extends StateNotifier<SpeechState> {
   /// ear. Deliberately not part of the queue: it interrupts nothing and leaves
   /// no source behind.
   Future<void> preview(String text) async {
-    if (state.isPlaying || state.isPaused) return;
+    // A reading in progress used to make this a no-op, and the sheet said so:
+    // "Stop the reading to try a voice". That is an instruction, not a control,
+    // and it asks for the one thing the reader cannot afford — stop() clears
+    // the source and the index with it, so trying a voice cost them their place
+    // in the chapter and there was nothing on this sheet to stop with anyway.
+    //
+    // Pausing costs nothing. The source and the index stay, the mini player
+    // keeps showing the reading with a play button on it, and the reader can
+    // try as many voices as they like before pressing it. What they hear when
+    // they do is the current line from its beginning rather than from the word
+    // it stopped on, because the engine's own pause context does not survive
+    // the stop below — a repeated line, which is the cheaper of the two losses.
+    if (state.isPlaying) await pause();
+
     await initialise();
     _generation++;
     await _safely(_tts.stop);
