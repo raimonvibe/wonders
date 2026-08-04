@@ -64,6 +64,59 @@ class Caption extends StatelessWidget {
   }
 }
 
+/// The reader's chosen size, composed with the one the platform already asked
+/// for.
+///
+/// The reading size used to be applied by hand, by the one screen that thought
+/// to: `passage_view` multiplied its own font sizes by it and nothing else did.
+/// So a reader who set 160% got 160% scripture in the Bible tab and a wonder
+/// card still at 100% — including the verse quoted at the top of it, which is
+/// the same scripture, set the same way, one tap apart. Every screen added
+/// after that would have had to remember, and screens do not remember.
+///
+/// A [TextScaler] is the mechanism Flutter already has for this: put one in the
+/// [MediaQuery] at the root and every `Text` beneath it obeys, whether or not
+/// its author knew the setting existed.
+///
+/// [platform] is whatever the device's own accessibility setting resolved to,
+/// and it is composed rather than replaced. Both are real requests — one made
+/// in the system settings, one made in this app — and a reader who has asked
+/// for large text everywhere and larger scripture here means both. Composing by
+/// scaling the size *before* handing it on is what `passage_view` was already
+/// doing when it wrote `18 * scale` inside a `Text` the platform then scaled
+/// again, so the reader's existing size comes through unchanged.
+class ReadingScaler extends TextScaler {
+  const ReadingScaler(this.platform, this.reading);
+
+  /// The device's own text size.
+  final TextScaler platform;
+
+  /// The reader's, from the slider on the More tab. 0.85 to 1.6.
+  final double reading;
+
+  @override
+  double scale(double fontSize) => platform.scale(fontSize * reading);
+
+  // Deprecated on TextScaler itself, in favour of the non-linear scale()
+  // above, but still abstract — so it has to be answered, and answered
+  // consistently with scale() for anything old enough to ask.
+  @override
+  // ignore: deprecated_member_use
+  double get textScaleFactor => platform.textScaleFactor * reading;
+
+  // MediaQuery compares its data to decide whether the subtree has to be
+  // rebuilt. Without these two, moving the slider would build a new scaler that
+  // compared equal to the old one and nothing on screen would change.
+  @override
+  bool operator ==(Object other) =>
+      other is ReadingScaler &&
+      other.platform == platform &&
+      other.reading == reading;
+
+  @override
+  int get hashCode => Object.hash(platform, reading);
+}
+
 /// The side margins a column of text should have, given the room it is in.
 ///
 /// A line of prose has a length past which it stops being readable, and it is
@@ -189,6 +242,23 @@ double gridTileExtent(
   final needed = title + subtitle + chrome + _slack;
   return needed < minimum ? minimum : needed;
 }
+
+/// How wide a fixed-extent grid tile has to be at the reader's chosen size.
+///
+/// [gridTileExtent] does this for height and was written because a hard-coded
+/// one overflows. A hard-coded *width* fails differently and more quietly: the
+/// tile does not overflow, it truncates. The book grid was laid out at 190,
+/// which fits "Deuteronomy" at the size it was designed at and not at 160%,
+/// where the reader gets "Deuterono…" — and, because the chapter count sits at
+/// the other end of the same row, an ellipsis pressed against a number:
+/// "2 Chronicles36". Nothing is reported as broken. The Bible simply has a book
+/// whose name the app will not say.
+///
+/// Scaling the tile with the text keeps the name whole and spends the width the
+/// reader asked for, which is the trade they made when they turned the size up:
+/// fewer books to a row, all of them legible.
+double gridTileWidth(BuildContext context, {required double designed}) =>
+    MediaQuery.textScalerOf(context).scale(designed);
 
 /// Two pixels of nothing, on purpose.
 ///

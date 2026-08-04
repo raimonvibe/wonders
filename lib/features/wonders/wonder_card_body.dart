@@ -50,11 +50,19 @@ class WonderCardBody extends ConsumerWidget {
       builder: (context, constraints) => ListView(
       // Same reasoning as the reader's: a card is mostly prose, and prose read
       // across the full width of a tablet runs past the length at which a line
-      // is comfortable to follow. 16 is what the body copy is set at.
+      // is comfortable to follow. 16 is what the body copy is set at, through
+      // the reader's own size — a column measured at 16 while the words are
+      // painted at 26 is the same too-long line the gutter exists to prevent.
       padding: EdgeInsets.fromLTRB(
-        readingGutter(constraints.maxWidth, fontSize: 16),
+        readingGutter(
+          constraints.maxWidth,
+          fontSize: MediaQuery.textScalerOf(context).scale(16),
+        ),
         16,
-        readingGutter(constraints.maxWidth, fontSize: 16),
+        readingGutter(
+          constraints.maxWidth,
+          fontSize: MediaQuery.textScalerOf(context).scale(16),
+        ),
         48,
       ),
       children: [

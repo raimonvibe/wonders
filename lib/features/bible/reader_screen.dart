@@ -116,10 +116,6 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
         previous: _previous,
         next: _next,
         onGo: _goTo,
-        // The bar has to keep the same column the verses do, and the column is
-        // measured from the size they are set at. Read here rather than in the
-        // bar so the bar stays a widget a test can lay out on its own.
-        fontScale: ref.watch(fontScaleProvider),
       ),
     );
   }
@@ -143,7 +139,6 @@ class ChapterTurnBar extends StatelessWidget {
     required this.previous,
     required this.next,
     required this.onGo,
-    this.fontScale = 1,
   });
 
   /// Null at Genesis 1 and at Revelation 22 respectively.
@@ -151,12 +146,6 @@ class ChapterTurnBar extends StatelessWidget {
   final Chapter? next;
 
   final ValueChanged<Chapter> onGo;
-
-  /// The reader's chosen size, so this keeps the column the verses keep.
-  ///
-  /// Defaults to 1 so the bar can still be laid out without a ProviderScope
-  /// over it — see the note above about testing it away from the database.
-  final double fontScale;
 
   @override
   Widget build(BuildContext context) {
@@ -169,7 +158,10 @@ class ChapterTurnBar extends StatelessWidget {
       //
       // Measured here rather than passed in because the bar is as wide as the
       // passage is: both are the Scaffold's width, inside whatever the nav
-      // rail has already taken.
+      // rail has already taken. The reader's size comes from the MediaQuery
+      // for the same reason it does everywhere else — see [ReadingScaler] —
+      // which is also what lets this stay a widget a test can lay out with no
+      // ProviderScope over it.
       child: LayoutBuilder(
         builder: (context, box) => Padding(
           padding: EdgeInsets.symmetric(
@@ -177,7 +169,7 @@ class ChapterTurnBar extends StatelessWidget {
             // on a phone this resolves to 0, which is what it was before.
             horizontal: readingGutter(
               box.maxWidth,
-              fontSize: 18 * fontScale,
+              fontSize: MediaQuery.textScalerOf(context).scale(18),
               minimum: 0,
             ),
           ),

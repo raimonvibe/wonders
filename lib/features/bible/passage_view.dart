@@ -146,7 +146,11 @@ class _PassageViewState extends ConsumerState<PassageView> {
   @override
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
-    final scale = ref.watch(fontScaleProvider);
+    // The reader's size is in the MediaQuery now, applied to every Text in the
+    // app at once — see [ReadingScaler]. What is left for this screen is the
+    // two places a *number* is needed rather than a Text: the column's width,
+    // and an icon, neither of which a TextScaler reaches on its own.
+    final scaler = MediaQuery.textScalerOf(context);
     final marks = ref.watch(marksInChapterProvider(widget.chapterId));
 
     // Only the anchor, so a chapter is not rebuilt for a pause or a rate
@@ -200,7 +204,7 @@ class _PassageViewState extends ConsumerState<PassageView> {
         // text to swipe out of Genesis 50.
         final gutter = readingGutter(
           constraints.maxWidth,
-          fontSize: 18 * scale,
+          fontSize: scaler.scale(18),
           minimum: widget.padding.left,
         );
 
@@ -251,7 +255,7 @@ class _PassageViewState extends ConsumerState<PassageView> {
                       text: '${verse.number} ',
                       style: TextStyle(
                         color: palette.shade400,
-                        fontSize: 12 * scale,
+                        fontSize: 12,
                         fontFeatures: const [FontFeature.superscripts()],
                       ),
                     ),
@@ -265,14 +269,14 @@ class _PassageViewState extends ConsumerState<PassageView> {
                           padding: const EdgeInsets.only(left: 6),
                           child: Icon(
                             Icons.sticky_note_2_outlined,
-                            size: 14 * scale,
+                            size: scaler.scale(14),
                             color: mark!.colour.edge,
                           ),
                         ),
                       ),
                   ],
                 ),
-                style: AppTheme.verseStyle(palette, fontSize: 18 * scale),
+                style: AppTheme.verseStyle(palette, fontSize: 18),
               ),
             );
 

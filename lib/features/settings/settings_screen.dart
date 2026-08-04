@@ -97,7 +97,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const _Heading('Reading size'),
             // The sample sits above the slider, not below it, so a thumb on the
             // track never covers the thing it is changing.
-            _SizeSample(scale: scale, palette: palette),
+            _SizeSample(palette: palette),
             Slider(
               value: scale,
               min: 0.85,
@@ -113,8 +113,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               onChanged: ref.read(fontScaleProvider.notifier).set,
             ),
             Caption(
-              '${(scale * 100).round()}% — applies everywhere you read '
-              'scripture.',
+              '${(scale * 100).round()}% — applies to every word in the app.',
             ),
 
             const Divider(),
@@ -156,13 +155,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 /// The setting always applied instantly; there was simply nothing on this
 /// screen rendered at that size, so the reader had to leave, look, and come
 /// back to judge it. This is the same widget tree PassageView builds — the
-/// superscript number, Merriweather at `18 * scale`, the same line height — so
-/// what you see here is what the chapter will look like, not an approximation
-/// of it.
+/// superscript number, Merriweather at 18, the same line height — so what you
+/// see here is what the chapter will look like, not an approximation of it.
+///
+/// Nothing here multiplies by the chosen size any more, and it must not: the
+/// scale is in the MediaQuery over the whole app now, so this sample grows
+/// because every Text does. Scaling it a second time by hand would make the
+/// one widget whose job is to be accurate the only one that lies.
 class _SizeSample extends StatelessWidget {
-  const _SizeSample({required this.scale, required this.palette});
+  const _SizeSample({required this.palette});
 
-  final double scale;
   final Palette palette;
 
   @override
@@ -178,7 +180,7 @@ class _SizeSample extends StatelessWidget {
                 text: '1 ',
                 style: TextStyle(
                   color: palette.shade400,
-                  fontSize: 12 * scale,
+                  fontSize: 12,
                   fontFeatures: const [FontFeature.superscripts()],
                 ),
               ),
@@ -188,7 +190,7 @@ class _SizeSample extends StatelessWidget {
               ),
             ],
           ),
-          style: AppTheme.verseStyle(palette, fontSize: 18 * scale),
+          style: AppTheme.verseStyle(palette, fontSize: 18),
         ),
       ),
     );
