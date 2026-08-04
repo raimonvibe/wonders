@@ -243,6 +243,35 @@ double gridTileExtent(
   return needed < minimum ? minimum : needed;
 }
 
+/// How big the read-aloud controls are drawn.
+///
+/// Material's 24 is the size of an icon that sits among others and means one of
+/// many things. These mean the same thing everywhere they appear — start, stop,
+/// go back a line — and they are pressed by someone who is listening rather
+/// than looking, often without looking at all. 28 is the size at which the
+/// glyph reads at arm's length and is still unmistakably an icon rather than a
+/// picture.
+///
+/// It is a glyph size, not a button size. Every caller pairs it with padding
+/// that keeps the button's own footprint exactly what it was — [speechIconPad]
+/// in the mini player, where five of them share a row with a title on a 320 pt
+/// phone and a wider button would take that title's room. Bigger inside the
+/// same box is the whole trick: nothing moves, the icon just fills more of the
+/// space it already had.
+const double speechIconSize = 28;
+
+/// The padding that holds a [speechIconSize] icon inside a compact 40 pt
+/// button.
+///
+/// IconButton sizes itself to its icon plus its padding, and only then applies
+/// its minimum. At Material's 24 and the default 8, that arithmetic came to 40
+/// exactly, which is also what `VisualDensity.compact` asks for — so the mini
+/// player's buttons have always been 40 and the row was laid out around it.
+/// 28 with 6 comes to the same 40. Leaving the padding alone would have made
+/// them 44, and five of those take twenty points off a title that has only a
+/// hundred to begin with.
+const double speechIconPad = 6;
+
 /// How wide a fixed-extent grid tile has to be at the reader's chosen size.
 ///
 /// [gridTileExtent] does this for height and was written because a hard-coded

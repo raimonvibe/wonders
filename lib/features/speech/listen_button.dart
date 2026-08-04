@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers.dart';
+import '../../theme/metrics.dart';
 import 'speech_chunk.dart';
 
 /// The Listen control, for an app bar.
@@ -93,11 +94,18 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
 
     return IconButton(
       tooltip: tooltip,
+      // Bigger than Material's 24 for the reason given on [speechIconSize].
+      // No padding override here, unlike the mini player: an app bar's action
+      // has room, and 28 plus the default 8 comes to 44, still inside the 48
+      // this button already reserved as a tap target. Nothing moves.
+      iconSize: speechIconSize,
       onPressed: _busy ? null : _onPressed,
       icon: _busy
+          // Sized to the icon it stands in for, so the bar does not twitch
+          // between pressing Listen and the first word.
           ? const SizedBox(
-              width: 20,
-              height: 20,
+              width: speechIconSize,
+              height: speechIconSize,
               child: CircularProgressIndicator(strokeWidth: 2),
             )
           : Icon(icon),

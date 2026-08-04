@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers.dart';
+import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
 import 'speech_controller.dart';
 import 'speech_settings_sheet.dart';
@@ -77,6 +78,8 @@ class SpeechBar extends ConsumerWidget {
                         IconButton(
                           tooltip: 'Back one line',
                           visualDensity: VisualDensity.compact,
+                          iconSize: speechIconSize,
+                          padding: const EdgeInsets.all(speechIconPad),
                           onPressed: speech.index == 0
                               ? null
                               : () => controller.skip(-1),
@@ -85,6 +88,8 @@ class SpeechBar extends ConsumerWidget {
                         IconButton(
                           tooltip: speech.isPlaying ? 'Pause' : 'Play',
                           visualDensity: VisualDensity.compact,
+                          iconSize: speechIconSize,
+                          padding: const EdgeInsets.all(speechIconPad),
                           onPressed: () {
                             if (speech.isPlaying) {
                               controller.pause();
@@ -107,6 +112,8 @@ class SpeechBar extends ConsumerWidget {
                         IconButton(
                           tooltip: 'Forward one line',
                           visualDensity: VisualDensity.compact,
+                          iconSize: speechIconSize,
+                          padding: const EdgeInsets.all(speechIconPad),
                           onPressed: speech.index >= source.length - 1
                               ? null
                               : () => controller.skip(1),
@@ -117,6 +124,8 @@ class SpeechBar extends ConsumerWidget {
                               ? 'Stopping in ${speech.sleepAfter.label}'
                               : 'Voice, speed and sleep timer',
                           visualDensity: VisualDensity.compact,
+                          iconSize: speechIconSize,
+                          padding: const EdgeInsets.all(speechIconPad),
                           onPressed: () => showSpeechSettings(context),
                           // A set timer is the one speech setting with a
                           // consequence you would want to see without opening
@@ -129,6 +138,8 @@ class SpeechBar extends ConsumerWidget {
                         IconButton(
                           tooltip: 'Stop',
                           visualDensity: VisualDensity.compact,
+                          iconSize: speechIconSize,
+                          padding: const EdgeInsets.all(speechIconPad),
                           onPressed: controller.stop,
                           icon: const Icon(Icons.close),
                         ),
