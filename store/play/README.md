@@ -190,7 +190,7 @@ Everything below is prepared except the four that need a browser or a decision.
 - [ ] **Enrol in Play App Signing** — do this at first upload. It is the only
       recovery path for a lost upload key and cannot be added afterwards.
 - [ ] Upload `store/play/upload/app-release.aab` to a closed testing track
-      first — `1.0.0+2`, signed and verified, see **Version** and **Signing**
+      first — `1.0.0+3`, signed and verified, see **Version** and **Signing**
 - [ ] Invite testers → `tester-invite.md`. A personal developer account needs
       **12 testers opted in for 14 continuous days** before production access
       is granted, counted on testers still enrolled rather than invited
@@ -225,8 +225,8 @@ PKCS12, valid to 2053. `android/key.properties` points at it; see
 `android/key.properties.example` for the fingerprint and how to verify a build.
 
 The bundle in `upload/` is signed with it — confirmed, not debug-signed.
-Rebuilt 4 August 2026 under `com.raimonvibe.wonders`; the previous one carried
-the old package name and could not have been uploaded.
+Rebuilt 4 August 2026 under `com.raimonvibe.wonders`; the one before that
+carried the old package name and could not have been uploaded.
 
 Verified at build time rather than assumed:
 
@@ -234,7 +234,7 @@ Verified at build time rather than assumed:
 Owner:   CN=Wonders and Hope, OU=Mobile, O=Raimonvibe, L=Amsterdam, ST=NH, C=NL
 SHA-256: F7:98:A5:4E:37:49:53:92:93:90:8A:22:33:76:0B:00:
          B8:AE:55:B0:E7:DE:A2:9C:38:A3:A2:3A:DA:21:78:1D
-package  com.raimonvibe.wonders   versionCode 2   versionName 1.0.0
+package  com.raimonvibe.wonders   versionCode 3   versionName 1.0.0
 ```
 
 The fingerprint matches the one recorded in `android/key.properties.example`.
@@ -246,14 +246,16 @@ normal-looking bundle that Play rejects.
 
 ## Version
 
-`pubspec.yaml` is at **1.0.0+2** (`versionName` / `versionCode`).
+`pubspec.yaml` is at **1.0.0+3** (`versionName` / `versionCode`).
 
 Play rejects a `versionCode` it has already seen, so the bump is per *upload*,
 not per release — a rejected or replaced bundle still burns its number. Bump
 the build number every time; bump the `versionName` only when the release is
 one users should be able to tell apart.
 
-The first upload is `1.0.0+2` rather than `1.0.1+2`: `versionName` is what a
+The first upload is `1.0.0+n` rather than `1.0.1+n`: `versionName` is what a
 user sees, and shipping the first release as 1.0.1 says a 1.0.0 existed. The
-build number went to 2 so the bundle could not be confused with the stale
-`1.0.0+1` it replaced, which was built under the old package name.
+build number left 1 behind because that bundle was built under the old package
+name, and has moved on since — a versionCode costs nothing and there are two
+billion of them, so bumping when in doubt is always cheaper than discovering at
+the Console that Play has seen the number before.
