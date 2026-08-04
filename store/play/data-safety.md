@@ -154,6 +154,64 @@ horror, user interaction, location sharing, purchases — all **no**.
 any time and the rating is regenerated from the new answers. A rating that
 comes back wrong is a form to fill in again, not a submission to withdraw.
 
+### The rest of the questionnaire, answered
+
+Category: **Alle andere typen apps** / All other app types. Not a game.
+
+| Question | Answer | Why |
+| --- | --- | --- |
+| A built-in feature letting users interact or exchange content with **other users** — voice, text, images, audio | **No** | The words that decide it are "built-in" and "other users": chat, comments, profiles, a shared feed. There are none. `share_plus` hands an image to the *system* share sheet and Android decides where it goes; the recipient is whoever the user picked, in another app. If a share button counted, every app with one would answer yes. |
+| Shares the user's precise physical location with other users | **No** | No location permission in the release manifest, and no `INTERNET` to share over. |
+| Lets users buy digital products | **No** | No billing dependency. The app is free and nothing is gated. |
+| Money rewards, gift cards, play-to-earn, crypto-convertible rewards, transferable digital assets (NFTs) | **No** | None of it. The follow-up checkboxes stay empty; they only appear if this is yes. |
+| A web browser or search engine | **No** | The app searches its own bundled catalogue and a local SQLite database. The question means general-purpose *web* browsing and search, which requires a network this app does not have. |
+| Primarily a News or Educational product | **No** | The word doing the work is *primarily*. This is a scripture reader with a curated catalogue — no lessons, no exercises, no progression, no assessment. Its Play category is Books & Reference. |
+
+Answering yes to the user-content question is the one that would genuinely cost
+something. It gates Play's user-generated content policy, which requires a
+moderation approach, an in-app reporting mechanism and a way to block abusive
+users — real obligations, for content that cannot exist here. Unlike the
+violence question, where a higher band costs nothing, over-declaring is not the
+safe hedge.
+
+"Educational" is a defensible yes and still the wrong answer: it nudges the app
+toward the Teacher Approved programme and family expectations, which contradicts
+the adult target audience declared on the other form. Two answers pointing in
+different directions attract a reviewer's attention for no benefit.
+
+### The rating that came back
+
+4 August 2026, first submission, **no content descriptors in any region**:
+
+| Region | Body | Rating |
+| --- | --- | --- |
+| Brazil | ClassInd | All ages |
+| North America | ESRB | Everyone |
+| Europe | PEGI | PEGI 3 |
+| Germany | USK | All ages |
+| Rest of world | IARC Generic | 3+ |
+| Russia | Google Play | 3+ |
+| South Korea | Google Play | 3+ |
+
+The empty descriptor column is the part worth keeping. It says IARC found
+nothing in the app needing a warning, which retires the violence question above
+for good — not by argument, but by result.
+
+The South Korea note about GRAC applies to games. This is not one.
+
+## App access
+
+*App-toegang*, alongside the forms above. Answer: **all functionality is
+available without any access restrictions**, and the credentials box stays
+**empty**.
+
+There is no login, no paywall, no region lock and no network, so a reviewer
+installing the bundle sees the whole app on first launch. The box exists so
+reviewers can reach what is hidden behind a sign-in; describing restrictions
+that do not exist invites one to hunt for a screen that is not there.
+
+It is easy to miss precisely because the correct answer is nothing at all.
+
 ## Target audience
 
 Not directed at children. Select the adult age bands. Declaring a child audience

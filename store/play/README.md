@@ -205,10 +205,10 @@ Everything below is prepared except the four that need a browser or a decision.
       whole app on first launch. Easy to miss precisely because the answer is
       nothing — do not fill the box "just in case", it invites a reviewer to
       hunt for a sign-in screen that does not exist
-- [ ] Content rating questionnaire → answers in `data-safety.md`. The violence
-      question is the only one to read twice; the language question is a plain
-      no. The questionnaire can be retaken at any time and the rating is
-      regenerated, so a wrong answer is not permanent
+- [x] **Content rating questionnaire** → done 4 August 2026. Everyone / PEGI 3
+      / all ages everywhere, **no content descriptors**. Every answer and the
+      reasoning behind it is in `data-safety.md`, including the rating table, so
+      the next submission is a transcription rather than a re-derivation
 - [ ] Target audience: adult bands, not child-directed → `data-safety.md`
 - [ ] Data safety form → answers in `data-safety.md` (short version: collects
       nothing)
