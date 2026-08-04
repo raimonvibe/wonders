@@ -25,7 +25,6 @@ void main() {
     double textScale = 1.0,
     void Function(Chapter)? onGo,
     double width = 320,
-    double fontScale = 1,
   }) async {
     tester.view
       ..physicalSize = Size(width, 640)
@@ -41,7 +40,6 @@ void main() {
               previous: previous,
               next: next,
               onGo: onGo ?? (_) {},
-              fontScale: fontScale,
             ),
           ),
         ),
@@ -140,7 +138,7 @@ void main() {
         previous: chapter('Genesis 1'),
         next: chapter('Genesis 3'),
         width: 1400,
-        fontScale: 1.5,
+        textScale: 1.5,
       );
       final atOneAndAHalf = tester.getRect(find.text('Genesis 1')).left;
 
