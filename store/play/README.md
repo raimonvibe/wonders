@@ -199,7 +199,16 @@ Everything below is prepared except the four that need a browser or a decision.
 - [ ] Paste release notes → **Release notes**, above. Use the closed-testing
       block for the test track and the production block for production; they
       differ by two lines and the difference matters to whoever reads them.
-- [ ] Content rating questionnaire → answers in `data-safety.md`
+- [ ] **App access** (*App-toegang*) → "All functionality is available without
+      any access restrictions". Leave the credentials box **empty**. There is no
+      login, no paywall, no region lock and no network, so a reviewer sees the
+      whole app on first launch. Easy to miss precisely because the answer is
+      nothing — do not fill the box "just in case", it invites a reviewer to
+      hunt for a sign-in screen that does not exist
+- [ ] Content rating questionnaire → answers in `data-safety.md`. The violence
+      question is the only one to read twice; the language question is a plain
+      no. The questionnaire can be retaken at any time and the rating is
+      regenerated, so a wrong answer is not permanent
 - [ ] Target audience: adult bands, not child-directed → `data-safety.md`
 - [ ] Data safety form → answers in `data-safety.md` (short version: collects
       nothing)

@@ -129,6 +129,31 @@ take it. A rating that comes back one band higher costs nothing. A
 misdeclaration found later is grounds for removal, and the questionnaire is
 signed under the same declaration as the data safety form.
 
+**How to decide, at the question itself.** IARC's wording is the deciding
+thing, and the Dutch console phrases it as *geweld*:
+
+- If it asks whether the app **contains or depicts** violence — showing it,
+  drawing it, animating it, letting the user do it — the answer is **no**.
+  This app renders text. It has no artwork of violence, no animation and
+  nothing interactive.
+- If it asks whether the app **refers to** violence, or offers a "non-graphic"
+  or "textual" band, answer **yes at the mildest option available**. Scripture
+  narrates the Egyptian army drowning, and the Red Sea card says so.
+
+Answering an unqualified yes to a depiction question over-declares. It is not
+dishonest and Play will not punish it, but the rating comes back at a band a
+scripture reader has no reason to carry, which narrows the audience and reads
+oddly on the listing. Bible apps sit at Everyone / PEGI 3 as a matter of course.
+
+**Other questions in the same section, for the record:** offensive language
+(*aanstootgevend taalgebruik*) — **no**; the World English Bible contains no
+profanity in the modern sense. Sexual content, nudity, drugs, gambling,
+horror, user interaction, location sharing, purchases — all **no**.
+
+**Nothing here is final.** The questionnaire can be retaken in the Console at
+any time and the rating is regenerated from the new answers. A rating that
+comes back wrong is a form to fill in again, not a submission to withdraw.
+
 ## Target audience
 
 Not directed at children. Select the adult age bands. Declaring a child audience
