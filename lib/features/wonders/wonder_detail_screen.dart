@@ -91,7 +91,8 @@ class _WonderDetailScreenState extends ConsumerState<WonderDetailScreen> {
 
   Future<Speakable?> _buildSpeakable(Wonder wonder) async {
     final repo = ref.read(wondersProvider);
-    final reach = _onPassage ? SpeechReach.passage : ref.read(speechProvider).reach;
+    final reach =
+        _onPassage ? SpeechReach.passage : ref.read(speechProvider).reach;
 
     // The card alone needs nothing from the database, so do not open it.
     if (reach == SpeechReach.card) return Speakables.card(wonder, repo);
@@ -99,9 +100,8 @@ class _WonderDetailScreenState extends ConsumerState<WonderDetailScreen> {
     final bible = ref.read(bibleProvider);
     final chapterId = wonder.passage.chapterId;
     final Chapter? chapter = await bible.chapter(chapterId);
-    final verses = chapter == null
-        ? const <Verse>[]
-        : await bible.versesIn(chapterId);
+    final verses =
+        chapter == null ? const <Verse>[] : await bible.versesIn(chapterId);
 
     return Speakables.forReach(
       reach,
@@ -130,7 +130,8 @@ class _WonderDetailScreenState extends ConsumerState<WonderDetailScreen> {
     if (wonder == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Not found')),
-        body: Center(child: Text('No wonder with the id "${widget.wonderId}".')),
+        body:
+            Center(child: Text('No wonder with the id "${widget.wonderId}".')),
       );
     }
 
@@ -182,7 +183,7 @@ class _WonderDetailScreenState extends ConsumerState<WonderDetailScreen> {
   }
 
   Future<void> _share(BuildContext context, Wonder wonder) async {
-    const service = ShareService(siteLabel: 'bible-wonders-seven.vercel.app');
+    const service = ShareService(siteLabel: 'Play Store App “Wonders”');
     final messenger = ScaffoldMessenger.of(context);
     try {
       await service.shareWonder(context, wonder);

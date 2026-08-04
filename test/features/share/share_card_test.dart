@@ -11,6 +11,11 @@ import '../../support/fixtures.dart';
 /// So it gets both kinds of test — a golden over the pixels, and assertions
 /// over the content rule, which is the part that would actually matter if it
 /// broke.
+/// The label production passes, stated once so the golden, the assertion and
+/// the app cannot drift apart — which is how the golden ended up rendering a
+/// placeholder shorter than the string that actually ships.
+const siteLabel = 'Play Store App “Wonders”';
+
 void main() {
   setUpAll(() {
     // Goldens must not depend on the network. Without this, google_fonts tries
@@ -54,7 +59,7 @@ void main() {
               decorationStyle: TextDecorationStyle.double,
             ),
             child: RepaintBoundary(
-              child: ShareCard(wonder: wonder, siteLabel: 'bible-wonders.app'),
+              child: ShareCard(wonder: wonder, siteLabel: siteLabel),
             ),
           ),
         ),
@@ -95,7 +100,7 @@ void main() {
     testWidgets('credits the translation', (tester) async {
       await pumpCard(tester, testWonder());
       expect(find.text('World English Bible'), findsOneWidget);
-      expect(find.text('bible-wonders.app'), findsOneWidget);
+      expect(find.text(siteLabel), findsOneWidget);
     });
   });
 

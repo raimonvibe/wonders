@@ -30,7 +30,13 @@ class ShareCard extends StatelessWidget {
 
   final Wonder wonder;
 
-  /// The only branding on the image, e.g. "bible-wonders-seven.vercel.app".
+  /// The only branding on the image, e.g. `Play Store App “Wonders”`.
+  ///
+  /// Named for where the app can be got rather than for where it is deployed.
+  /// This was the Vercel URL of the web reader, which worked and read like a
+  /// deployment: the `-seven` in it is a suffix Vercel invented, printed on a
+  /// picture whose whole job is to be seen by somebody who does not have the
+  /// app yet.
   final String siteLabel;
 
   @override
