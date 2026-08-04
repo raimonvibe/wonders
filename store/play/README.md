@@ -190,7 +190,9 @@ Everything below is prepared except the four that need a browser or a decision.
 - [ ] **Enrol in Play App Signing** — do this at first upload. It is the only
       recovery path for a lost upload key and cannot be added afterwards.
 - [ ] Upload `store/play/upload/app-release.aab` to a closed testing track
-      first — `1.0.0+3`, signed and verified, see **Version** and **Signing**
+      first — `1.0.0+4`, signed and verified, see **Version** and **Signing**.
+      `+3` was uploaded and carried a share bug that only appears in release
+      builds; do not ship it
 - [ ] Invite testers → `tester-invite.md`. A personal developer account needs
       **12 testers opted in for 14 continuous days** before production access
       is granted, counted on testers still enrolled rather than invited
@@ -251,7 +253,7 @@ Verified at build time rather than assumed:
 Owner:   CN=Wonders and Hope, OU=Mobile, O=Raimonvibe, L=Amsterdam, ST=NH, C=NL
 SHA-256: F7:98:A5:4E:37:49:53:92:93:90:8A:22:33:76:0B:00:
          B8:AE:55:B0:E7:DE:A2:9C:38:A3:A2:3A:DA:21:78:1D
-package  com.raimonvibe.wonders   versionCode 3   versionName 1.0.0
+package  com.raimonvibe.wonders   versionCode 4   versionName 1.0.0
 ```
 
 The fingerprint matches the one recorded in `android/key.properties.example`.
@@ -263,7 +265,7 @@ normal-looking bundle that Play rejects.
 
 ## Version
 
-`pubspec.yaml` is at **1.0.0+3** (`versionName` / `versionCode`).
+`pubspec.yaml` is at **1.0.0+4** (`versionName` / `versionCode`).
 
 Play rejects a `versionCode` it has already seen, so the bump is per *upload*,
 not per release — a rejected or replaced bundle still burns its number. Bump
