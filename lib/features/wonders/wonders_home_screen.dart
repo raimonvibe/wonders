@@ -378,7 +378,7 @@ class _PickerGrid<T> extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       sliver: SliverGrid.builder(
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 220,
+          maxCrossAxisExtent: gridTileWidth(context, designed: 220),
           // Two lines, because the longest labels — "Acts and the early
           // church", "Signs and appearances" — wrap at this width, and measured
           // rather than guessed so a larger system font still fits.

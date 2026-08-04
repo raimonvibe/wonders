@@ -112,6 +112,43 @@ void main() {
       expect(effective(tester), 18);
     });
 
+    // A grid tile with a hard-coded width does not overflow when the text
+    // outgrows it — it truncates, silently. "Deuteronomy" came back as
+    // "Deuterono…" at 160%, with the chapter count pressed against the
+    // ellipsis. The tile has to grow with the words in it.
+    testWidgets('the longest book name still fits its tile at 160%',
+        (tester) async {
+      await pumpApp(tester, reading: 1.6);
+      final context = tester.element(find.byType(Scaffold).first);
+
+      // Widest name in the canon, and the one the 190 pt tile lost first.
+      const longest = 'Song of Solomon';
+      final painter = TextPainter(
+        text: TextSpan(
+          text: longest,
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+        textDirection: TextDirection.ltr,
+        textScaler: MediaQuery.textScalerOf(context),
+      )..layout();
+
+      // 24 of horizontal padding, 8 between the name and the count, and the
+      // count itself — all of which the name has to share the tile with.
+      const chrome = 24.0 + 8.0 + 28.0;
+      expect(
+        gridTileWidth(context, designed: 190),
+        greaterThan(painter.width + chrome),
+      );
+      painter.dispose();
+    });
+
+    testWidgets('a tile is the size it was drawn at when nothing is scaled',
+        (tester) async {
+      await pumpApp(tester, reading: 1);
+      final context = tester.element(find.byType(Scaffold).first);
+      expect(gridTileWidth(context, designed: 190), 190);
+    });
+
     // The reason to be careful about making this global. Before, the catalog
     // only ever saw the platform's scale; now the slider multiplies it, and the
     // worst case a reader can actually reach is both at once.

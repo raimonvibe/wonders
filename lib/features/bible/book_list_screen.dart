@@ -137,7 +137,7 @@ class _BookGrid extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 190,
+        maxCrossAxisExtent: gridTileWidth(context, designed: 190),
         // 56 is the designed height; it only grows if the reader's text size
         // needs more than one line's worth of room inside it.
         mainAxisExtent: gridTileExtent(
@@ -173,6 +173,10 @@ class _BookGrid extends StatelessWidget {
                     Expanded(
                       child: Text(book.name, overflow: TextOverflow.ellipsis),
                     ),
+                    // A name long enough to be cut still ends in an ellipsis,
+                    // and without this the ellipsis touched the number:
+                    // "2 Chronicles36" read as one word.
+                    const SizedBox(width: 8),
                     Text(
                       '${book.chapterCount}',
                       style: Theme.of(context).textTheme.bodySmall,

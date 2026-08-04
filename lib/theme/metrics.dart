@@ -243,6 +243,23 @@ double gridTileExtent(
   return needed < minimum ? minimum : needed;
 }
 
+/// How wide a fixed-extent grid tile has to be at the reader's chosen size.
+///
+/// [gridTileExtent] does this for height and was written because a hard-coded
+/// one overflows. A hard-coded *width* fails differently and more quietly: the
+/// tile does not overflow, it truncates. The book grid was laid out at 190,
+/// which fits "Deuteronomy" at the size it was designed at and not at 160%,
+/// where the reader gets "Deuterono…" — and, because the chapter count sits at
+/// the other end of the same row, an ellipsis pressed against a number:
+/// "2 Chronicles36". Nothing is reported as broken. The Bible simply has a book
+/// whose name the app will not say.
+///
+/// Scaling the tile with the text keeps the name whole and spends the width the
+/// reader asked for, which is the trade they made when they turned the size up:
+/// fewer books to a row, all of them legible.
+double gridTileWidth(BuildContext context, {required double designed}) =>
+    MediaQuery.textScalerOf(context).scale(designed);
+
 /// Two pixels of nothing, on purpose.
 ///
 /// Working from the theme's nominal metrics gets within a fraction of a pixel
