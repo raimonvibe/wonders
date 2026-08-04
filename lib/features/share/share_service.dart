@@ -50,16 +50,21 @@ class ShareService {
   /// message is a line of text in somebody's chat app, where the useful thing
   /// is something to tap.
   ///
-  /// **At launch this becomes the Play listing:**
+  /// This is the Play listing:
   /// `https://play.google.com/store/apps/details?id=com.raimonvibe.wonders`
-  /// — an address fixed by the applicationId, which cannot change, so it will
-  /// never need changing again.
   ///
-  /// It is not that yet. A closed-testing app has no public listing and that
-  /// URL returns 404, and a dead link in a stranger's chat reads as broken in a
-  /// way that no link at all does not. Until the app reaches open testing or
-  /// production this points at the web reader, which is live and says the same
-  /// things.
+  /// The address is built from the applicationId, which was settled before the
+  /// first upload and cannot be changed after it, so this is the app's address
+  /// for as long as the app exists. Nothing about a rename, a new store title
+  /// or a hundred releases moves it.
+  ///
+  /// **It returns 404 until the app reaches open testing or production.** A
+  /// closed-testing app has no public listing, so anything a tester shares in
+  /// the meantime carries a link that fails for whoever receives it. That is a
+  /// known cost of pointing at the permanent address early rather than a
+  /// temporary one that would have to be remembered and swapped: the day the
+  /// app goes public, every share ever sent starts working, including the ones
+  /// already sitting in somebody's chat history.
   final String link;
 
   /// The words that travel beside the image.
