@@ -45,38 +45,113 @@ void main() {
     });
   });
 
-  group('the navigation', () {
-    late WondersRepository repo;
-
-    setUpAll(() async {
-      repo = await WondersRepository.load();
+  group('the content measure', () {
+    test('a phone keeps the margin it always had', () {
+      // 0, because the slivers carry their own 16. A phone has to come out
+      // pixel for pixel as it did before the gutter existed.
+      expect(contentGutter(400), 0);
+      expect(contentGutter(360), 0);
+      expect(contentGutter(contentIdeal), 0);
     });
 
-    Future<void> pumpApp(WidgetTester tester, {required double width}) async {
-      tester.view
-        ..physicalSize = Size(width, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+    test('a tablet turns the extra width into margin', () {
+      final gutter = contentGutter(1300);
+      expect(gutter, greaterThan(0));
+      expect(1300 - gutter * 2, contentIdeal);
+    });
 
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await Prefs.load();
+    test('wider than prose, because controls are not read line by line', () {
+      expect(contentIdeal, greaterThan(1000 - readingGutter(1000, fontSize: 18) * 2));
+    });
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            prefsProvider.overrideWithValue(prefs),
-            wondersProvider.overrideWithValue(repo),
-            speechProvider.overrideWith((ref) => SpeechController(prefs)),
-          ],
-          child: MaterialApp.router(
-            theme: AppTheme.of(Palette.pine),
-            routerConfig: AppRouter.build(),
-          ),
-        ),
+    test('the catalog pairs up only when a pair is worth having', () {
+      // A phone stays single-column, and so does anything whose content column
+      // would leave two tiles narrower than one phone's worth.
+      expect(400 - contentGutter(400) * 2, lessThan(catalogTwoColumnFrom));
+      expect(
+        1300 - contentGutter(1300) * 2,
+        greaterThanOrEqualTo(catalogTwoColumnFrom),
       );
-      await tester.pump();
-    }
+    });
+  });
 
+  late WondersRepository repo;
+
+  setUpAll(() async {
+    repo = await WondersRepository.load();
+  });
+
+  Future<void> pumpApp(WidgetTester tester, {required double width}) async {
+    tester.view
+      ..physicalSize = Size(width, 900)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await Prefs.load();
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          prefsProvider.overrideWithValue(prefs),
+          wondersProvider.overrideWithValue(repo),
+          speechProvider.overrideWith((ref) => SpeechController(prefs)),
+        ],
+        child: MaterialApp.router(
+          theme: AppTheme.of(Palette.pine),
+          routerConfig: AppRouter.build(),
+        ),
+      ),
+    );
+    await tester.pump();
+  }
+
+  group('the catalog', () {
+    // No resume card without a last wonder, so every ListTile on the page is
+    // a wonder in the catalog.
+    testWidgets('a phone stacks it in one column', (tester) async {
+      await pumpApp(tester, width: 400);
+      final tiles = find.byType(ListTile);
+      expect(tester.widgetList(tiles).length, greaterThan(1));
+
+      final first = tester.getRect(tiles.at(0));
+      final second = tester.getRect(tiles.at(1));
+      expect(second.top, greaterThanOrEqualTo(first.bottom));
+    });
+
+    testWidgets('a tablet runs it in two', (tester) async {
+      await pumpApp(tester, width: 1400);
+      final tiles = find.byType(ListTile);
+      expect(tester.widgetList(tiles).length, greaterThan(1));
+
+      final first = tester.getRect(tiles.at(0));
+      final second = tester.getRect(tiles.at(1));
+      expect(second.top, first.top);
+      expect(second.left, greaterThanOrEqualTo(first.right));
+    });
+
+    testWidgets('the rows stop short of the screen edge on a tablet',
+        (tester) async {
+      await pumpApp(tester, width: 1400);
+      final row = tester.getRect(find.byType(ListTile).at(0));
+      expect(row.left, greaterThan(100));
+    });
+
+    testWidgets('the ways in stop growing once they have room', (tester) async {
+      await pumpApp(tester, width: 1400);
+      // The cap is 200; four chips dividing this width unbounded would be 310.
+      final chip = tester.getRect(find.widgetWithText(ChoiceChip, 'By theme'));
+      expect(chip.width, lessThanOrEqualTo(200));
+    });
+
+    testWidgets('and still fill the row on a phone', (tester) async {
+      await pumpApp(tester, width: 400);
+      final chip = tester.getRect(find.widgetWithText(ChoiceChip, 'By theme'));
+      expect(chip.width, lessThan(200));
+    });
+  });
+
+  group('the navigation', () {
     // Material's compact/medium boundary is 600. Below it a rail is explicitly
     // the wrong component; at it and above, a bottom bar is a row of controls
     // along the far edge of a screen held by its sides.
