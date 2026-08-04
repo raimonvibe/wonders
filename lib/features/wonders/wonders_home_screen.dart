@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../data/reading_paths.dart';
+import '../../data/wonders_repository.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
 import '../../theme/app_theme.dart';
@@ -31,9 +32,47 @@ class WondersHomeScreen extends ConsumerWidget {
     return Scaffold(
       body: DecoratedBox(
         decoration: BoxDecoration(gradient: palette.pageGradient),
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar.large(
+        // The gradient stays outside this, so the colour still runs edge to
+        // edge on a wide screen and only the content is brought in.
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final gutter = contentGutter(box.maxWidth);
+            final columns =
+                box.maxWidth - gutter * 2 >= catalogTwoColumnFrom ? 2 : 1;
+            return _body(
+              context,
+              ref,
+              gutter: gutter,
+              columns: columns,
+              repo: repo,
+              state: state,
+              controller: controller,
+              wonders: wonders,
+              palette: palette,
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _body(
+    BuildContext context,
+    WidgetRef ref, {
+    required double gutter,
+    required int columns,
+    required WondersRepository repo,
+    required PathState state,
+    required PathController controller,
+    required List<Wonder> wonders,
+    required Palette palette,
+  }) {
+    return CustomScrollView(
+      slivers: [
+        // Outside the gutter on purpose. The bar is chrome rather than content,
+        // and a title that starts 200 pt in reads as a layout fault on the one
+        // element the reader meets first.
+        SliverAppBar.large(
               title: const Text('Wonders and Hope'),
               backgroundColor: Colors.transparent,
               actions: [
@@ -52,6 +91,14 @@ class WondersHomeScreen extends ConsumerWidget {
               ],
             ),
 
+        // Everything below the bar is content, and shares one gutter. The
+        // 16 pt paddings inside each sliver are the phone's margin and stay
+        // where they are; this is the margin outside them, which is 0 until
+        // there is width to spare.
+        SliverPadding(
+          padding: EdgeInsets.symmetric(horizontal: gutter),
+          sliver: SliverMainAxisGroup(
+            slivers: [
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -153,17 +200,42 @@ class WondersHomeScreen extends ConsumerWidget {
                   ),
                 )
               else
+                // One row per [columns] wonders. A Row of Expanded tiles
+                // rather than a SliverGrid because a grid wants a fixed extent
+                // and these rows do not have one: a title can wrap to two lines
+                // and so can the list of books that also tell it. Sized by the
+                // taller of the pair, the row cannot overflow at any text size,
+                // which is the failure gridTileExtent exists to prevent and the
+                // one a catalog of 178 rows would find.
                 SliverList.builder(
-                  itemCount: wonders.length,
-                  itemBuilder: (context, index) =>
-                      _WonderTile(wonder: wonders[index]),
+                  itemCount: (wonders.length + columns - 1) ~/ columns,
+                  itemBuilder: (context, row) {
+                    if (columns == 1) return _WonderTile(wonder: wonders[row]);
+                    final first = row * columns;
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        for (var column = 0; column < columns; column++)
+                          Expanded(
+                            child: first + column < wonders.length
+                                ? _WonderTile(wonder: wonders[first + column])
+                                // The last row of an odd count. Empty rather
+                                // than absent, so the tile beside it keeps its
+                                // half of the width instead of stretching to
+                                // the full one.
+                                : const SizedBox.shrink(),
+                          ),
+                      ],
+                    );
+                  },
                 ),
             ],
 
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -198,6 +270,16 @@ class _PathChips extends StatelessWidget {
   /// wants a little air before it looks cramped against the outline.
   static const _chipChrome = 40.0;
 
+  /// The widest a single chip is allowed to get.
+  ///
+  /// Equal widths are the point — see the note above — but equal is not the
+  /// same as unbounded. Four chips dividing a tablet's landscape width came to
+  /// 310 pt each, which puts "By theme" alone in the middle of a button three
+  /// times the size of its own label and reads as a control that failed to load
+  /// rather than one of four choices. Capped, they stay equal to each other and
+  /// stop growing once they have the room they need.
+  static const _chipMax = 200.0;
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -205,20 +287,31 @@ class _PathChips extends StatelessWidget {
         const paths = ReadingPath.values;
         final columns = _columnsThatFit(context, box.maxWidth);
 
-        return Column(
-          children: [
-            for (var row = 0; row < paths.length; row += columns) ...[
-              if (row > 0) const SizedBox(height: _gap),
-              Row(
-                children: [
-                  for (var column = 0; column < columns; column++) ...[
-                    if (column > 0) const SizedBox(width: _gap),
-                    Expanded(child: _chip(paths[row + column])),
-                  ],
+        // Left, not centred: the section label above them starts at the
+        // margin, and a row of chips floating away from it would read as a
+        // separate thing rather than as the answer to it.
+        return Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: _chipMax * columns + _gap * (columns - 1),
+            ),
+            child: Column(
+              children: [
+                for (var row = 0; row < paths.length; row += columns) ...[
+                  if (row > 0) const SizedBox(height: _gap),
+                  Row(
+                    children: [
+                      for (var column = 0; column < columns; column++) ...[
+                        if (column > 0) const SizedBox(width: _gap),
+                        Expanded(child: _chip(paths[row + column])),
+                      ],
+                    ],
+                  ),
                 ],
-              ),
-            ],
-          ],
+              ],
+            ),
+          ),
         );
       },
     );

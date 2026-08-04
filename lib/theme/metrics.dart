@@ -102,6 +102,48 @@ double readingGutter(
   return gutter < minimum ? minimum : gutter;
 }
 
+/// The side margins a column of *controls* should have, given the room it is in.
+///
+/// [readingGutter] is the rule for prose, and the wonder card and the passage
+/// both obey it. The home screen is not prose — it is a heading, a resume card,
+/// four chips, a search box and a list of rows — so it was left full-bleed, and
+/// on a tablet in landscape that turns out to be its own kind of unreadable. A
+/// search field 1,270 pt wide does not look generous, it looks unfinished; a
+/// list row whose text ends a quarter of the way across leaves the eye to cross
+/// three quarters of a screen of nothing to reach the next one.
+///
+/// Controls tolerate more width than prose does — a chip is not read left to
+/// right for half an hour — so the ceiling is wider than the 66-character
+/// measure, wide enough that the catalog can run in two columns rather than one
+/// stretched one. Past it the extra width becomes margin, which is the thing
+/// that makes a wide screen look composed rather than merely large.
+///
+/// [minimum] is 0 rather than 20 because every caller already carries its own
+/// 16 pt padding: this is the gutter *outside* that, so a phone comes out
+/// exactly as it did before.
+double contentGutter(
+  double available, {
+  /// The widest the column of controls is allowed to get.
+  double ideal = contentIdeal,
+  double minimum = 0,
+}) {
+  final gutter = (available - ideal) / 2;
+  return gutter < minimum ? minimum : gutter;
+}
+
+/// The widest a column of controls is allowed to get.
+///
+/// Wide enough for two catalog columns at a comfortable width, narrow enough
+/// that a 13-inch tablet in landscape keeps a visible margin either side.
+const double contentIdeal = 880;
+
+/// Two catalog columns need this much room between the gutters.
+///
+/// Below it the pair would be narrower than a phone's single column, which
+/// trades one kind of awkward for another: a wonder's title and its reference
+/// both wrapping in a 280 pt slot is worse than one column with room to spare.
+const double catalogTwoColumnFrom = 640;
+
 /// How tall a fixed-extent grid tile has to be at the reader's chosen text size.
 ///
 /// A grid with a hard-coded `mainAxisExtent` is a RenderFlex overflow waiting
