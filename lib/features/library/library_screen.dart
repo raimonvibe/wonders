@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/mark.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/states.dart';
 import '../share/share_service.dart' show shareOrigin;
@@ -24,6 +25,9 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   HighlightColour? _filter;
 
+  /// Stated once, so the bar's height is measured from the string it paints.
+  static const _title = 'Kept verses';
+
   @override
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
@@ -33,7 +37,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kept verses'),
+        // Two, not none: the export and clear buttons appear as soon as there
+        // is anything kept, and a bar sized for the empty case is the one that
+        // clips the moment it stops being empty.
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          _title,
+          actions: 2,
+        ),
+        title: const AppBarTitle(_title, actions: 2),
         actions: [
           if (all.isNotEmpty) ...[
             IconButton(

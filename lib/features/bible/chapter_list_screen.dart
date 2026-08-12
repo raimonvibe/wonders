@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/bible.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/metrics.dart';
 import '../../theme/states.dart';
 import '../speech/listen_button.dart';
@@ -48,9 +49,15 @@ class _ChapterListScreenState extends ConsumerState<ChapterListScreen> {
           });
         }
 
+        final title = book?.name ?? '';
         return Scaffold(
           appBar: AppBar(
-            title: Text(book?.name ?? ''),
+            toolbarHeight: AppBarTitle.toolbarHeightFor(
+              context,
+              title,
+              actions: 1,
+            ),
+            title: AppBarTitle(title, actions: 1),
             actions: [
               if (book != null)
                 ListenButton(

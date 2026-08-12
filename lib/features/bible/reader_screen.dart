@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../models/bible.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/metrics.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
@@ -83,9 +84,15 @@ class _ReaderScreenState extends ConsumerState<ReaderScreen> {
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
 
+    final title = _chapter?.reference ?? '';
     return Scaffold(
       appBar: AppBar(
-        title: Text(_chapter?.reference ?? ''),
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          title,
+          actions: 1,
+        ),
+        title: AppBarTitle(title, actions: 1),
         actions: [
           ListenButton(
             sourceId: Speakables.chapterKey(_chapterId),

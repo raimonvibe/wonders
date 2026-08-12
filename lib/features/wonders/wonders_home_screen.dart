@@ -6,6 +6,7 @@ import '../../data/reading_paths.dart';
 import '../../data/wonders_repository.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
@@ -21,6 +22,11 @@ import '../speech/speakables.dart';
 class WondersHomeScreen extends ConsumerWidget {
   const WondersHomeScreen({super.key});
 
+  /// Stated once, because the bar's height is measured from the very string the
+  /// bar then paints. Measuring one and painting another is how a title that
+  /// was sized to fit stops fitting.
+  static const _title = 'Wonders and Hope';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final repo = ref.watch(wondersProvider);
@@ -30,6 +36,56 @@ class WondersHomeScreen extends ConsumerWidget {
     final palette = ref.watch(themeProvider);
 
     return Scaffold(
+      // The same bar the Bible tab wears, down to the widget: a plain AppBar on
+      // the Scaffold, taking the theme's height, ground and title face. This was
+      // a SliverAppBar.large inside the scroll view, which is a different title
+      // in a different place at a different size — it opened at 96 pt of
+      // headline and shrank as you scrolled, so crossing between the two tabs
+      // moved the title twice and reported the two halves of the app as two
+      // apps. The rule under it is the only thing that differs, and it is gold.
+      appBar: AppBar(
+        // A title in a fixed 56 pt bar has about 20 pt of slack at the default
+        // text size, which is room enough for the rule; a reader on a large
+        // system font has none, and the bar grows to keep the gold in it. The
+        // one action below is counted, because it is width the title does not
+        // get and therefore a line break the height has to allow for.
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          _title,
+          actions: 1,
+        ),
+        title: const AppBarTitle(_title, actions: 1),
+        actions: [
+          // Reads the page as it stands — what this is, which path is in force,
+          // and the wonders that path resolves to. Searching or switching path
+          // and pressing Listen again reads the new list.
+          ListenButton(
+            sourceId: Speakables.wondersListId,
+            source: () async {
+              // Theme / era open on a picker; name those choices rather than
+              // reading an empty wonder list as "nothing matches".
+              final pickerOptions =
+                  state.path == ReadingPath.theme && state.theme == null
+                      ? [
+                          for (final t in WonderTheme.values) repo.labelFor(t),
+                        ]
+                      : state.path == ReadingPath.era && state.era == null
+                          ? [
+                              for (final e in repo.populatedEras())
+                                repo.labelForEra(e),
+                            ]
+                          : const <String>[];
+              return Speakables.wondersList(
+                catalogCount: repo.count,
+                path: state,
+                wonders: wonders,
+                pickerOptions: pickerOptions,
+              );
+            },
+            tooltip: 'Read this page aloud',
+          ),
+        ],
+      ),
       body: DecoratedBox(
         decoration: BoxDecoration(gradient: palette.pageGradient),
         // The gradient stays outside this, so the colour still runs edge to
@@ -69,28 +125,6 @@ class WondersHomeScreen extends ConsumerWidget {
   }) {
     return CustomScrollView(
       slivers: [
-        // Outside the gutter on purpose. The bar is chrome rather than content,
-        // and a title that starts 200 pt in reads as a layout fault on the one
-        // element the reader meets first.
-        SliverAppBar.large(
-              title: const Text('Wonders and Hope'),
-              backgroundColor: Colors.transparent,
-              actions: [
-                // Reads the page as it stands — what this is, which path is in
-                // force, and the wonders that path resolves to. Searching or
-                // switching path and pressing Listen again reads the new list.
-                ListenButton(
-                  sourceId: Speakables.wondersListId,
-                  source: () async => Speakables.wondersList(
-                    catalogCount: repo.count,
-                    path: state,
-                    wonders: wonders,
-                  ),
-                  tooltip: 'Read this page aloud',
-                ),
-              ],
-            ),
-
         // Everything below the bar is content, and shares one gutter. The
         // 16 pt paddings inside each sliver are the phone's margin and stay
         // where they are; this is the margin outside them, which is 0 until
@@ -99,9 +133,13 @@ class WondersHomeScreen extends ConsumerWidget {
           padding: EdgeInsets.symmetric(horizontal: gutter),
           sliver: SliverMainAxisGroup(
             slivers: [
+            // 16 at the top now that the bar above is the standard one.
+            // Under the large bar this line had a headline's worth of
+            // padding sitting over it and needed none of its own; against a
+            // 56 pt bar it was touching the chrome.
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Text(
                   '${repo.count} wonders, each with the passage it happened in.',
                   style: TextStyle(color: palette.shade200),

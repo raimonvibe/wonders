@@ -202,6 +202,10 @@ class SpeechController extends StateNotifier<SpeechState> {
   int _errors = 0;
   static const _maxConsecutiveErrors = 3;
 
+  /// Short breath between queued chunks so catalogue lines do not butt together.
+  /// Only used when a chunk finishes on its own; start / skip / resume speak at once.
+  static const _betweenChunks = Duration(milliseconds: 350);
+
   /// The platform's own rate scale, as the engine reports it. Both operating
   /// systems put normal at 0.5 — iOS because that is
   /// AVSpeechUtteranceDefaultSpeechRate, Android because flutter_tts doubles
@@ -420,17 +424,18 @@ class SpeechController extends StateNotifier<SpeechState> {
 
   Future<void> pause() async {
     if (!state.isPlaying) return;
-    // No generation bump: the utterance is suspended, not abandoned, and
-    // resume() speaks the same text to continue it.
+    // Status first so the mini player / Listen button flip to Play immediately.
     state = state.copyWith(status: SpeechStatus.paused);
-    await _safely(_tts.pause);
+    // Stop rather than engine-pause. Some Android TTS engines (notably older
+    // emulators) ignore pause(), so audio kept going and the UI stayed on the
+    // pause icon. resume() already re-speaks the current chunk, so nothing is
+    // lost by ending the utterance here. Generation is bumped so a completion
+    // from this stop cannot advance the queue.
+    _generation++;
+    await _safely(_tts.stop);
   }
 
-  /// Continue the paused chunk.
-  ///
-  /// Speaking the identical string is how both platforms resume: iOS calls
-  /// `continueSpeaking`, and Android picks the utterance back up from the word
-  /// it stopped on. Handing over a different string would restart it.
+  /// Continue from the paused chunk (from the start of that line).
   Future<void> resume() async {
     if (!state.isPaused) return;
     state = state.copyWith(status: SpeechStatus.playing);
@@ -522,8 +527,7 @@ class SpeechController extends StateNotifier<SpeechState> {
       return;
     }
 
-    state = state.copyWith(index: next);
-    unawaited(_speakCurrent());
+    unawaited(_advanceTo(next));
   }
 
   void _onError(dynamic message) {
@@ -550,8 +554,19 @@ class SpeechController extends StateNotifier<SpeechState> {
       state = state.copyWith(status: SpeechStatus.idle, index: 0);
       return;
     }
+    unawaited(_advanceTo(next));
+  }
+
+  /// Move to [next] and speak it after [_betweenChunks].
+  ///
+  /// The generation check after the delay is what keeps a pause/stop/skip
+  /// during the breath from starting a chunk nobody asked for.
+  Future<void> _advanceTo(int next) async {
+    final generation = _generation;
     state = state.copyWith(index: next);
-    unawaited(_speakCurrent());
+    await Future<void>.delayed(_betweenChunks);
+    if (_disposed || generation != _generation || !state.isPlaying) return;
+    await _speakCurrent();
   }
 
   /* --- the sleep timer ---------------------------------------------------- */
@@ -588,12 +603,14 @@ class SpeechController extends StateNotifier<SpeechState> {
   Future<void> setRate(double rate) async {
     state = state.copyWith(rate: rate);
     _save(_prefs.setSpeechRate(rate));
+    if (state.isPlaying) return;
     await _applyRate();
   }
 
   Future<void> setPitch(double pitch) async {
     state = state.copyWith(pitch: pitch);
     _save(_prefs.setSpeechPitch(pitch));
+    if (state.isPlaying) return;
     await _safely(() => _tts.setPitch(pitch));
   }
 

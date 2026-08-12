@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/bible.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../bible/passage_view.dart';
 import '../share/share_service.dart';
 import '../speech/listen_button.dart';
@@ -129,15 +130,27 @@ class _WonderDetailScreenState extends ConsumerState<WonderDetailScreen> {
 
     if (wonder == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Not found')),
+        appBar: AppBar(
+          toolbarHeight: AppBarTitle.toolbarHeightFor(context, 'Not found'),
+          title: const AppBarTitle('Not found'),
+        ),
         body:
             Center(child: Text('No wonder with the id "${widget.wonderId}".')),
       );
     }
 
+    final title = _onPassage ? wonder.passage.label : wonder.title;
+    // Listen + optional share.
+    final actions = wonder.isShareable ? 2 : 1;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(_onPassage ? wonder.passage.label : wonder.title),
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          title,
+          actions: actions,
+        ),
+        title: AppBarTitle(title, actions: actions),
         actions: [
           ListenButton(
             sourceId: _sourceId(wonder),

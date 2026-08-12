@@ -1,8 +1,10 @@
+import 'package:bible_wonders/data/reading_paths.dart';
 import 'package:bible_wonders/data/wonders_repository.dart';
 import 'package:bible_wonders/features/speech/speakables.dart';
 import 'package:bible_wonders/features/speech/speech_controller.dart';
 import 'package:bible_wonders/models/bible.dart';
 import 'package:bible_wonders/models/passage_ref.dart';
+import 'package:bible_wonders/models/wonder.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../../support/fixtures.dart';
@@ -219,6 +221,72 @@ void main() {
       expect(SpeechReach.parse(null), SpeechReach.card);
       expect(SpeechReach.parse('nonsense'), SpeechReach.card);
       expect(SpeechReach.parse('both'), SpeechReach.both);
+    });
+  });
+
+  group('wonders home list', () {
+    test('era path without a filter reads the choices in one sentence', () {
+      final speakable = Speakables.wondersList(
+        catalogCount: 10,
+        path: const PathState(path: ReadingPath.era),
+        wonders: const [],
+        pickerOptions: const ['Torah', 'The Gospels'],
+      );
+      final spoken = spokenText(speakable);
+      expect(
+        spoken,
+        contains('Choose a book or era to continue: Torah and The Gospels.'),
+      );
+      expect(spoken, isNot(contains('Nothing on this path matches.')));
+      // One picker chunk — not one utterance per short label.
+      expect(speakable.chunks.where((c) => c.anchor == 'picker'), hasLength(1));
+    });
+
+    test('theme path without a filter asks to choose, not empty', () {
+      final spoken = spokenText(
+        Speakables.wondersList(
+          catalogCount: 10,
+          path: const PathState(path: ReadingPath.theme),
+          wonders: const [],
+          pickerOptions: const ['Rescue'],
+        ),
+      );
+      expect(spoken, contains('Choose a theme to continue: Rescue.'));
+      expect(spoken, isNot(contains('Nothing on this path matches.')));
+    });
+
+    test('filtered path with no matches says empty', () {
+      final spoken = spokenText(
+        Speakables.wondersList(
+          catalogCount: 10,
+          path: const PathState(
+            path: ReadingPath.theme,
+            theme: WonderTheme.rescue,
+          ),
+          wonders: const [],
+        ),
+      );
+      expect(spoken, contains('Nothing on this path matches.'));
+    });
+
+    test('lists wonders in groups, not one tiny line each', () {
+      final wonders = [
+        testWonder(id: 'a', title: 'Alpha'),
+        testWonder(id: 'b', title: 'Beta'),
+        testWonder(id: 'c', title: 'Gamma'),
+        testWonder(id: 'd', title: 'Delta'),
+      ];
+      final speakable = Speakables.wondersList(
+        catalogCount: 10,
+        path: const PathState(path: ReadingPath.catalog),
+        wonders: wonders,
+      );
+      final wonderChunks =
+          speakable.chunks.where((c) => c.anchor?.startsWith('wonder:') ?? false);
+      // 4 wonders → 2 groups of up to 3, not 4 (+ separate count).
+      expect(wonderChunks.length, 2);
+      expect(speakable.chunks.firstWhere((c) => c.anchor?.startsWith('wonder:') ?? false).text,
+          startsWith('4 wonders.'));
     });
   });
 }

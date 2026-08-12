@@ -99,7 +99,12 @@ class Speakables {
       );
     }
 
-    return Speakable(id: cardId(wonder), title: wonder.title, chunks: chunks);
+    return Speakable(
+      id: cardId(wonder),
+      title: wonder.title,
+      page: 'wonder/${wonder.id}/card',
+      chunks: chunks,
+    );
   }
 
   /// A heading and its paragraph, as two chunks.
@@ -129,6 +134,7 @@ class Speakables {
     return Speakable(
       id: chapterKey(chapter.id),
       title: chapter.reference,
+      page: 'bible/${chapter.id}',
       chunks: [
         SpeechChunk(chapter.reference, label: chapter.reference),
         for (final verse in verses)
@@ -168,6 +174,7 @@ class Speakables {
     return Speakable(
       id: bothId(wonder),
       title: wonder.title,
+      page: 'wonder/${wonder.id}/both',
       chunks: [
         ...cardPart.chunks,
         const SpeechChunk('Now the passage.'),
@@ -210,14 +217,35 @@ class Speakables {
 
   /// The Wonders home, read the way the page reads: what it is, which path is
   /// in force, then the wonders that path resolves to.
+  ///
+  /// Theme and era paths show a picker before any filter is chosen. The visible
+  /// list is empty then, but that is not "nothing matches" — it is "nothing
+  /// chosen yet". [pickerOptions] are the labels on that picker, read aloud so
+  /// Listen names the choices instead of claiming the path is empty.
   static Speakable wondersList({
     required int catalogCount,
     required PathState path,
     required List<Wonder> wonders,
+    List<String> pickerOptions = const [],
   }) {
+    final awaitingPicker =
+        (path.path == ReadingPath.theme && path.theme == null) ||
+            (path.path == ReadingPath.era && path.era == null);
+
+    final page = switch (path.path) {
+      ReadingPath.theme when path.theme != null =>
+        'wonders/theme/${path.theme!.id}',
+      ReadingPath.theme => 'wonders/theme/picker',
+      ReadingPath.era when path.era != null => 'wonders/era/${path.era!.id}',
+      ReadingPath.era => 'wonders/era/picker',
+      ReadingPath.startHere => 'wonders/start-here',
+      ReadingPath.catalog => 'wonders/catalog',
+    };
+
     return Speakable(
       id: wondersListId,
       title: 'Wonders and Hope',
+      page: page,
       chunks: [
         SpeechChunk(
           'Wonders and Hope. $catalogCount wonders, each with the passage it '
@@ -225,20 +253,58 @@ class Speakables {
           anchor: 'intro',
         ),
         SpeechChunk('${path.path.label}. ${path.path.blurb}', anchor: 'path'),
-        if (wonders.isEmpty)
+        if (awaitingPicker)
+          // One sentence, not one utterance per chip. "Torah." "Acts." as
+          // separate speaks is what made By theme / By era sound sped up at
+          // 1.0× — five-character names finish instantly even with a long gap.
+          SpeechChunk(
+            pickerOptions.isEmpty
+                ? (path.path == ReadingPath.theme
+                    ? 'Choose a theme to continue.'
+                    : 'Choose a book or era to continue.')
+                : (path.path == ReadingPath.theme
+                    ? 'Choose a theme to continue: ${_list(pickerOptions)}.'
+                    : 'Choose a book or era to continue: ${_list(pickerOptions)}.'),
+            anchor: 'picker',
+          )
+        else if (wonders.isEmpty)
           const SpeechChunk('Nothing on this path matches.')
         else
-          SpeechChunk(
-            wonders.length == 1 ? '1 wonder.' : '${wonders.length} wonders.',
-          ),
-        for (final wonder in wonders)
-          SpeechChunk(
-            '${wonder.title}. ${wonder.passage.label}.',
-            anchor: 'wonder:${wonder.id}',
-            label: wonder.title,
-          ),
+          ..._wonderListChunks(wonders),
       ],
     );
+  }
+
+  /// Wonder titles for the home list, in small groups.
+  ///
+  /// One chunk per wonder (plus a separate "14 wonders.") was a stream of
+  /// ~30-character lines — correct rate, wrong pace. Three titles per
+  /// utterance keeps skip useful without the auctioneer effect.
+  static List<SpeechChunk> _wonderListChunks(List<Wonder> wonders) {
+    const groupSize = 3;
+    final chunks = <SpeechChunk>[];
+    for (var i = 0; i < wonders.length; i += groupSize) {
+      final group = wonders.sublist(
+        i,
+        i + groupSize > wonders.length ? wonders.length : i + groupSize,
+      );
+      final body = group
+          .map((w) => '${w.title}. ${w.passage.label}.')
+          .join(' ');
+      final text = i == 0
+          ? (wonders.length == 1
+              ? '1 wonder. $body'
+              : '${wonders.length} wonders. $body')
+          : body;
+      chunks.add(
+        SpeechChunk(
+          text,
+          anchor: 'wonder:${group.first.id}',
+          label: group.first.title,
+        ),
+      );
+    }
+    return chunks;
   }
 
   /// The 66 books, by testament, with how many chapters each has.
@@ -256,6 +322,7 @@ class Speakables {
     return Speakable(
       id: booksId,
       title: 'The Bible',
+      page: 'bible/books',
       chunks: [
         SpeechChunk('Old Testament, ${old.length} books.'),
         ...old.map(chunkFor),
@@ -271,6 +338,7 @@ class Speakables {
     return Speakable(
       id: chaptersId(book.id),
       title: book.name,
+      page: 'bible/${book.id}/chapters',
       chunks: [
         SpeechChunk(
           '${book.name}. ${chapters.length} '
@@ -286,6 +354,7 @@ class Speakables {
     return Speakable(
       id: aboutId,
       title: 'About',
+      page: 'more/about',
       chunks: [
         const SpeechChunk(
           'The scripture in this app is the World English Bible, which is in '

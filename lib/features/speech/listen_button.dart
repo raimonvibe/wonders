@@ -8,9 +8,7 @@ import 'speech_chunk.dart';
 /// The Listen control, for an app bar.
 ///
 /// One button on every screen that has something to say, which is what makes
-/// read-aloud a feature of the app rather than of one screen. It knows three
-/// states and only three: this screen's material is playing, it is paused, or
-/// something else (or nothing) is.
+/// read-aloud a feature of the app rather than of one screen.
 ///
 /// Building the queue is deferred to [source] because scripture has to come out
 /// of the database first, and doing that on every rebuild would query a chapter
@@ -55,6 +53,15 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
       if (speech.isPaused) return controller.resume();
     }
 
+    // Something else is still talking (or paused). Stop it from *this* page —
+    // otherwise the reader has to find the screen that started it before they
+    // can silence leftover audio.
+    if (speech.source != null &&
+        !speech.isSource(widget.sourceId) &&
+        !speech.isIdle) {
+      return controller.stop();
+    }
+
     if (_busy) return;
     setState(() => _busy = true);
     try {
@@ -74,10 +81,23 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
 
   @override
   Widget build(BuildContext context) {
-    final speech = ref.watch(speechProvider);
-    final mine = speech.isSource(widget.sourceId);
-    final playing = mine && speech.isPlaying;
-    final paused = mine && speech.isPaused;
+    // Select only what paints the icon. Watching the whole state rebuilt the
+    // bar on every chunk for no reason, and on a slow device that could leave
+    // the pause glyph up a frame after status had already flipped.
+    final playing = ref.watch(
+      speechProvider.select((s) => s.isSource(widget.sourceId) && s.isPlaying),
+    );
+    final paused = ref.watch(
+      speechProvider.select((s) => s.isSource(widget.sourceId) && s.isPaused),
+    );
+    final foreignActive = ref.watch(
+      speechProvider.select(
+        (s) =>
+            s.source != null &&
+            !s.isSource(widget.sourceId) &&
+            !s.isIdle,
+      ),
+    );
 
     final IconData icon;
     final String tooltip;
@@ -87,6 +107,9 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
     } else if (paused) {
       icon = Icons.play_circle_outline;
       tooltip = 'Resume';
+    } else if (foreignActive) {
+      icon = Icons.stop_circle_outlined;
+      tooltip = 'Stop reading';
     } else {
       icon = Icons.headphones_outlined;
       tooltip = widget.tooltip;
@@ -110,8 +133,9 @@ class _ListenButtonState extends ConsumerState<ListenButton> {
             )
           : Icon(icon),
       // Speaking is the one thing on screen that keeps happening after you look
-      // away, so it gets a colour while it is happening.
-      color: playing || paused
+      // away, so it gets a colour while it is happening — including leftover
+      // audio from another screen, which this button can now stop.
+      color: playing || paused || foreignActive
           ? Theme.of(context).colorScheme.secondary
           : null,
     );

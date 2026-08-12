@@ -20,6 +20,7 @@ import 'providers.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   bundleTheTypefaces();
+  await theTypefacesHaveLoaded();
 
   // Everything the app reads is bundled, so it is all resolvable before the
   // first frame. Doing it here rather than in a FutureBuilder means no screen
@@ -99,6 +100,50 @@ void bundleTheTypefaces() {
       yield LicenseEntryWithLineBreaks([family], licence);
     }
   });
+}
+
+/// Wait for the faces to be registered before anything is measured in them.
+///
+/// Bundling the files is not the same as having them. `GoogleFonts` reads them
+/// out of the asset bundle *asynchronously*, so without this the first frames
+/// are laid out in the system fallback and the real faces arrive a frame or two
+/// later. A font arriving is not a rebuild — the framework notifies
+/// `PaintingBinding.systemFonts`, every `RenderParagraph` marks itself dirty and
+/// lays out again, and no widget's `build` runs. Anything a widget *computed*
+/// from text metrics keeps the number it worked out in the fallback face.
+///
+/// That is a whole class of bug rather than one bug, because this app measures
+/// text in a lot of places and has to: [gridTileExtent] sizes the grids,
+/// [readingGutter] sets the column width, `_columnsThatFit` arranges the path
+/// chips, `AppBarTitle.toolbarHeightFor` gives the bar its height, and
+/// `ShareCard._quoteSizeFor` picks the size the scripture is set at. Every one
+/// of them ran against Roboto and was then painted in Playfair or Merriweather,
+/// which are wider — so every one of them under-measured.
+///
+/// It has been found before and fixed in one place: `ShareService.renderPng`
+/// awaits `pendingFonts` for itself, because a share image typeset in the
+/// fallback "looks like a different app". The same await belongs here, once,
+/// where it covers the other five.
+///
+/// The whole list is requested rather than the app bar's one face: a variant
+/// nobody asks for here is a variant that loads late, and the bug is late
+/// loading. Awaiting them costs a few milliseconds off an asset bundle and buys
+/// a first frame whose measurements are the measurements the reader keeps.
+Future<void> theTypefacesHaveLoaded() async {
+  // The eight in assets/fonts, one for one. Asking is what queues the load;
+  // pendingFonts waits for everything queued. Listing the files rather than the
+  // call sites is deliberate: a variant that is bundled is a variant something
+  // asks for, and a variant nobody preloads is one that arrives late.
+  await GoogleFonts.pendingFonts([
+    GoogleFonts.inter(),
+    GoogleFonts.inter(fontWeight: FontWeight.w500),
+    GoogleFonts.inter(fontWeight: FontWeight.w600),
+    GoogleFonts.merriweather(),
+    GoogleFonts.merriweather(fontStyle: FontStyle.italic),
+    GoogleFonts.playfairDisplay(),
+    GoogleFonts.playfairDisplay(fontWeight: FontWeight.w600),
+    GoogleFonts.playfairDisplay(fontStyle: FontStyle.italic),
+  ]);
 }
 
 /// Put read-aloud on the lock screen, and let it keep speaking off screen.

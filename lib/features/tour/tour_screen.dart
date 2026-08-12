@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/bible.dart';
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/metrics.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
@@ -26,6 +27,9 @@ class TourScreen extends ConsumerStatefulWidget {
 }
 
 class _TourScreenState extends ConsumerState<TourScreen> {
+  /// Stated once, so the bar's height is measured from the string it paints.
+  static const _title = 'The tour';
+
   late final PageController _pages =
       PageController(initialPage: ref.read(prefsProvider).tourStep);
 
@@ -103,7 +107,13 @@ class _TourScreenState extends ConsumerState<TourScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('The tour'),
+        // Two: the Listen button comes and goes with `current`.
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          _title,
+          actions: 2,
+        ),
+        title: const AppBarTitle(_title, actions: 2),
         actions: [
           IconButton(
             tooltip: narrating

@@ -33,6 +33,7 @@ class Speakable {
     required this.id,
     required this.title,
     required this.chunks,
+    this.page,
   });
 
   /// Identifies the *content*, not the instance: rebuilding a screen must
@@ -42,6 +43,9 @@ class Speakable {
 
   /// Shown in the mini player — "Crossing the Red Sea", "Exodus 14".
   final String title;
+
+  /// Where this queue was built — for debug logs, e.g. `wonders/era/torah`.
+  final String? page;
 
   final List<SpeechChunk> chunks;
 

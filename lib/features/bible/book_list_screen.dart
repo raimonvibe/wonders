@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../models/bible.dart';
 import '../../models/wonder.dart' show Testament;
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
 import '../../theme/states.dart';
@@ -26,13 +27,23 @@ class BookListScreen extends ConsumerStatefulWidget {
 class _BookListScreenState extends ConsumerState<BookListScreen> {
   late final Future<List<Book>> _books = ref.read(bibleProvider).books();
 
+  /// Stated once, so the bar's height is measured from the string it paints.
+  static const _title = 'The Bible';
+
   @override
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('The Bible'),
+        // Two actions here rather than one, so the title has 48 pt less to
+        // break in and the bar is measured against that.
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          _title,
+          actions: 2,
+        ),
+        title: const AppBarTitle(_title, actions: 2),
         actions: [
           ListenButton(
             sourceId: Speakables.booksId,

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../models/wonder.dart';
 import '../../providers.dart';
+import '../../theme/app_bar_title.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/metrics.dart';
 import '../../theme/palette.dart';
@@ -24,6 +25,9 @@ class SettingsScreen extends ConsumerStatefulWidget {
 }
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  /// Stated once, so the bar's height is measured from the string it paints.
+  static const _title = 'More';
+
   @override
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
@@ -33,7 +37,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('More'),
+        toolbarHeight: AppBarTitle.toolbarHeightFor(
+          context,
+          _title,
+          actions: 1,
+        ),
+        title: const AppBarTitle(_title, actions: 1),
         actions: [
           ListenButton(
             sourceId: Speakables.aboutId,

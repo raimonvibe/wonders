@@ -1,7 +1,7 @@
 name: bible_wonders
 description: "Wonders and Hope — the Bible's miracles, with the passage open beside you."
 publish_to: "none"
-version: 1.0.0+5
+version: 1.0.0+7
 
 environment:
   # Dart 3.6 / Flutter 3.27. Color.withValues, used throughout theme/ and

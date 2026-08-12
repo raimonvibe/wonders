@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../../data/wonders_repository.dart';
 import '../../models/wonder.dart';
@@ -14,11 +15,18 @@ import '../speech/speakables.dart';
 /// One wonder card. The counterpart of ../../components/WonderCardBody.tsx,
 /// and like it, shared by every place a card appears.
 ///
-/// While this card is being read aloud the section being spoken is tinted, so
-/// listening and reading do not drift apart. The anchors come from
-/// [Speakables.card] — the two have to agree, and that is the only coupling
-/// between them.
-class WonderCardBody extends ConsumerWidget {
+/// While this card is being read aloud the section being spoken is tinted and
+/// kept on screen, the same way [PassageView] follows each verse. The anchors
+/// come from [Speakables.card] — the two have to agree, and that is the only
+/// coupling between them.
+///
+/// ## Why this is not a ListView
+///
+/// The follow-along scroll has to reach a section that is usually below the
+/// fold, and a lazy `ListView` has not built those. Index-based scrolling does
+/// not need the target built first — same reason the passage reader uses
+/// scrollable_positioned_list.
+class WonderCardBody extends ConsumerStatefulWidget {
   const WonderCardBody({
     super.key,
     required this.wonder,
@@ -30,8 +38,66 @@ class WonderCardBody extends ConsumerWidget {
   /// Null in contexts with no passage page to move to, such as the tour.
   final VoidCallback? onReadPassage;
 
+  /// Where in the card's section list [anchor] lands, or null when unknown.
+  ///
+  /// Title is spoken before anything on the card body appears, so it lands on
+  /// the chips — the first thing the reader can see. Kept as a static so the
+  /// order can be pinned in a test without pumping TTS.
+  static int? indexOfSpokenSection(
+    List<String?> sectionAnchors,
+    String? anchor,
+  ) {
+    if (anchor == null) return null;
+    final target = anchor == 'title' ? 'chips' : anchor;
+    final index = sectionAnchors.indexWhere((a) => a == target);
+    return index < 0 ? null : index;
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WonderCardBody> createState() => _WonderCardBodyState();
+}
+
+class _WonderCardBodyState extends ConsumerState<WonderCardBody> {
+  final _scroll = ItemScrollController();
+
+  /// The section we have already followed. Without it every rebuild would drag
+  /// the list back to the spoken section, including the ones caused by the
+  /// reader scrolling away on purpose.
+  String? _followedAnchor;
+
+  @override
+  void didUpdateWidget(WonderCardBody oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.wonder.id != widget.wonder.id) {
+      _followedAnchor = null;
+    }
+  }
+
+  /// Keep the section being spoken on screen, once per anchor.
+  void _followSpoken(List<String?> sectionAnchors, String? anchor) {
+    if (anchor == null || anchor == _followedAnchor) return;
+    _followedAnchor = anchor;
+
+    final index = WonderCardBody.indexOfSpokenSection(sectionAnchors, anchor);
+    if (index == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scroll.isAttached) return;
+      // Jump, do not animate. Animated scrollTo every heading fought the TTS
+      // binder on the emulator (frame skips + "reads too fast" while the rate
+      // log still said 1.0×). Keeping the spoken section on screen is enough.
+      _scroll.jumpTo(
+        index: index,
+        // A third of the way down, so the line being read has the lines it is
+        // about to reach visible underneath it.
+        alignment: 0.3,
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final wonder = widget.wonder;
     final palette = ref.watch(themeProvider);
     final repo = ref.watch(wondersProvider);
     final parallels = repo.parallelsOf(wonder);
@@ -46,77 +112,140 @@ class WonderCardBody extends ConsumerWidget {
       }),
     );
 
+    final sections = _sections(
+      wonder: wonder,
+      repo: repo,
+      palette: palette,
+      parallels: parallels,
+      active: active,
+    );
+    final sectionAnchors = [for (final s in sections) s.anchor];
+
+    if (active != null) {
+      _followSpoken(sectionAnchors, active);
+    } else {
+      _followedAnchor = null;
+    }
+
     return LayoutBuilder(
-      builder: (context, constraints) => ListView(
-      // Same reasoning as the reader's: a card is mostly prose, and prose read
-      // across the full width of a tablet runs past the length at which a line
-      // is comfortable to follow. 16 is what the body copy is set at, through
-      // the reader's own size — a column measured at 16 while the words are
-      // painted at 26 is the same too-long line the gutter exists to prevent.
-      padding: EdgeInsets.fromLTRB(
-        readingGutter(
-          constraints.maxWidth,
-          fontSize: MediaQuery.textScalerOf(context).scale(16),
+      builder: (context, constraints) => ScrollablePositionedList.builder(
+        itemScrollController: _scroll,
+        // Same reasoning as the reader's: a card is mostly prose, and prose read
+        // across the full width of a tablet runs past the length at which a line
+        // is comfortable to follow. 16 is what the body copy is set at, through
+        // the reader's own size — a column measured at 16 while the words are
+        // painted at 26 is the same too-long line the gutter exists to prevent.
+        padding: EdgeInsets.fromLTRB(
+          readingGutter(
+            constraints.maxWidth,
+            fontSize: MediaQuery.textScalerOf(context).scale(16),
+          ),
+          16,
+          readingGutter(
+            constraints.maxWidth,
+            fontSize: MediaQuery.textScalerOf(context).scale(16),
+          ),
+          48,
         ),
-        16,
-        readingGutter(
-          constraints.maxWidth,
-          fontSize: MediaQuery.textScalerOf(context).scale(16),
-        ),
-        48,
+        itemCount: sections.length,
+        itemBuilder: (context, index) => sections[index].child,
       ),
-      children: [
-        _Spoken(
-          active: active == 'chips',
+    );
+  }
+
+  List<_Section> _sections({
+    required Wonder wonder,
+    required WondersRepository repo,
+    required Palette palette,
+    required List<Wonder> parallels,
+    required String? active,
+  }) {
+    final out = <_Section>[
+      _Section(
+        anchor: 'chips',
+        child: _Spoken(
+          active: active == 'chips' || active == 'title',
           child: _Chips(wonder: wonder, repo: repo, palette: palette),
         ),
-        const SizedBox(height: 20),
+      ),
+    ];
 
-        if (wonder.quote != null)
-          _Spoken(
-            active: active == 'quote',
-            child: _PullQuote(
-              quote: wonder.quote!,
-              reference: wonder.quoteRef ?? wonder.passage.label,
-              palette: palette,
+    if (wonder.quote != null) {
+      out.add(
+        _Section(
+          anchor: 'quote',
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: _Spoken(
+              active: active == 'quote',
+              child: _PullQuote(
+                quote: wonder.quote!,
+                reference: wonder.quoteRef ?? wonder.passage.label,
+                palette: palette,
+              ),
             ),
           ),
+        ),
+      );
+    }
 
-        if (onReadPassage != null) ...[
-          const SizedBox(height: 20),
-          FilledButton.icon(
-            onPressed: onReadPassage,
-            icon: const Icon(Icons.menu_book_outlined),
-            label: Text('Read ${wonder.passage.label}'),
+    if (widget.onReadPassage != null) {
+      out.add(
+        _Section(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: FilledButton.icon(
+              onPressed: widget.onReadPassage,
+              icon: const Icon(Icons.menu_book_outlined),
+              label: Text('Read ${wonder.passage.label}'),
+            ),
           ),
-        ],
+        ),
+      );
+    }
 
-        if (wonder.location != null) ...[
-          const SizedBox(height: 20),
-          _Spoken(
-            active: active == 'location',
-            child: Row(
-              children: [
-                Icon(Icons.place_outlined, size: 16, color: palette.shade300),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    wonder.location!,
-                    style: TextStyle(color: palette.shade200, fontSize: 13),
+    if (wonder.location != null) {
+      out.add(
+        _Section(
+          anchor: 'location',
+          child: Padding(
+            padding: const EdgeInsets.only(top: 20),
+            child: _Spoken(
+              active: active == 'location',
+              child: Row(
+                children: [
+                  Icon(Icons.place_outlined, size: 16, color: palette.shade300),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      wonder.location!,
+                      style: TextStyle(color: palette.shade200, fontSize: 13),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ],
+        ),
+      );
+    }
 
-        if (wonder.details.isNotEmpty) ...[
-          const SizedBox(height: 28),
-          SectionLabel('Notable details', palette: palette),
-          const SizedBox(height: 10),
-          for (var i = 0; i < wonder.details.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
+    if (wonder.details.isNotEmpty) {
+      out.add(
+        _Section(
+          anchor: 'details',
+          child: Padding(
+            padding: const EdgeInsets.only(top: 28),
+            child: SectionLabel('Notable details', palette: palette),
+          ),
+        ),
+      );
+      for (var i = 0; i < wonder.details.length; i++) {
+        out.add(
+          _Section(
+            anchor: 'details:$i',
+            child: Padding(
+              padding: const EdgeInsets.only(top: 10),
               child: _Spoken(
                 active: active == 'details:$i',
                 child: Row(
@@ -138,105 +267,167 @@ class WonderCardBody extends ConsumerWidget {
                 ),
               ),
             ),
-        ],
-
-        _Prose(
-          'What happened',
-          wonder.whatHappened,
-          palette: palette,
-          active: active == 'whatHappened',
-        ),
-        _Prose(
-          'What it says about hope',
-          wonder.hopeMeaning,
-          palette: palette,
-          active: active == 'hopeMeaning',
-        ),
-
-        // Rule (a) from PLAN.md: a parallel account has to say what *it*
-        // stresses that the others do not, or the cards are interchangeable.
-        if (wonder.distinctive != null)
-          _Prose(
-            'What ${wonder.passage.bookName} stresses',
-            wonder.distinctive,
-            palette: palette,
-            active: active == 'distinctive',
           ),
+        );
+      }
+    }
 
-        if (wonder.reflectionQuestion != null) ...[
-          const SizedBox(height: 28),
-          _Spoken(
-            active: active == 'reflection',
-            child: Panel(
-              palette: palette,
-              accent: true,
+    void addProse(String title, String? body, String anchor) {
+      if (body == null) return;
+      out.add(
+        _Section(
+          anchor: anchor,
+          child: Padding(
+            padding: const EdgeInsets.only(top: 28),
+            child: _Spoken(
+              active: active == anchor,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SectionLabel('To sit with', palette: palette),
-                  const SizedBox(height: 8),
+                  SectionLabel(title, palette: palette),
+                  const SizedBox(height: 10),
                   Text(
-                    wonder.reflectionQuestion!,
-                    style: GoogleFonts.merriweather(
+                    body,
+                    style: TextStyle(
                       fontSize: 16,
-                      height: 1.6,
-                      fontStyle: FontStyle.italic,
-                      color: palette.shade50,
+                      height: 1.65,
+                      color: palette.shade100,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ],
+        ),
+      );
+    }
 
-        if (parallels.isNotEmpty) ...[
-          const SizedBox(height: 28),
-          SectionLabel('Also in', palette: palette),
-          const SizedBox(height: 10),
-          _Spoken(
-            active: active == 'parallels',
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
+    addProse('What happened', wonder.whatHappened, 'whatHappened');
+    addProse('What it says about hope', wonder.hopeMeaning, 'hopeMeaning');
+
+    // Rule (a) from PLAN.md: a parallel account has to say what *it*
+    // stresses that the others do not, or the cards are interchangeable.
+    if (wonder.distinctive != null) {
+      addProse(
+        'What ${wonder.passage.bookName} stresses',
+        wonder.distinctive,
+        'distinctive',
+      );
+    }
+
+    if (wonder.reflectionQuestion != null) {
+      out.add(
+        _Section(
+          anchor: 'reflection',
+          child: Padding(
+            padding: const EdgeInsets.only(top: 28),
+            child: _Spoken(
+              active: active == 'reflection',
+              child: Panel(
+                palette: palette,
+                accent: true,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    SectionLabel('To sit with', palette: palette),
+                    const SizedBox(height: 8),
+                    Text(
+                      wonder.reflectionQuestion!,
+                      style: GoogleFonts.merriweather(
+                        fontSize: 16,
+                        height: 1.6,
+                        fontStyle: FontStyle.italic,
+                        color: palette.shade50,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (parallels.isNotEmpty) {
+      out.add(
+        _Section(
+          anchor: 'parallels',
+          child: Padding(
+            padding: const EdgeInsets.only(top: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final other in parallels)
-                  ActionChip(
-                    label: Text(other.passage.bookName),
-                    // pushReplacement, not push: walking Matthew → Mark → Luke
-                    // should not build a back stack three cards deep.
-                    onPressed: () =>
-                        context.pushReplacement('/wonders/${other.id}'),
+                SectionLabel('Also in', palette: palette),
+                const SizedBox(height: 10),
+                _Spoken(
+                  active: active == 'parallels',
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final other in parallels)
+                        ActionChip(
+                          label: Text(other.passage.bookName),
+                          // pushReplacement, not push: walking Matthew → Mark → Luke
+                          // should not build a back stack three cards deep.
+                          onPressed: () =>
+                              context.pushReplacement('/wonders/${other.id}'),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (wonder.alsoSee.isNotEmpty) {
+      out.add(
+        _Section(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionLabel('Read further', palette: palette),
+                const SizedBox(height: 10),
+                for (final ref in wonder.alsoSee)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Text(
+                      ref.label,
+                      style: TextStyle(color: palette.shade200),
+                    ),
                   ),
               ],
             ),
           ),
-        ],
+        ),
+      );
+    }
 
-        if (wonder.alsoSee.isNotEmpty) ...[
-          const SizedBox(height: 24),
-          SectionLabel('Read further', palette: palette),
-          const SizedBox(height: 10),
-          for (final ref in wonder.alsoSee)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Text(
-                ref.label,
-                style: TextStyle(color: palette.shade200),
-              ),
-            ),
-        ],
-      ],
-      ),
-    );
+    return out;
   }
+}
+
+class _Section {
+  const _Section({this.anchor, required this.child});
+
+  /// Matches a [SpeechChunk.anchor] from [Speakables.card], when this block
+  /// is something the voice can land on.
+  final String? anchor;
+  final Widget child;
 }
 
 /// Marks the piece of the card being spoken.
 ///
-/// A tint rather than a border or a scroll: several of these sections already
-/// carry a border of their own, and a card is short enough to keep the whole of
-/// it in view without being dragged about.
+/// A tint rather than a border: several of these sections already carry a
+/// border of their own. The list scrolls the active section into view the same
+/// way the passage reader does — tint alone was enough when every card fitted
+/// on one screen; it is not, once the voice has moved past the fold.
 class _Spoken extends StatelessWidget {
   const _Spoken({required this.active, required this.child});
 
@@ -337,46 +528,6 @@ class _PullQuote extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Prose extends StatelessWidget {
-  const _Prose(
-    this.title,
-    this.body, {
-    required this.palette,
-    this.active = false,
-  });
-
-  final String title;
-  final String? body;
-  final Palette palette;
-  final bool active;
-
-  @override
-  Widget build(BuildContext context) {
-    if (body == null) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(top: 28),
-      child: _Spoken(
-        active: active,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SectionLabel(title, palette: palette),
-            const SizedBox(height: 10),
-            Text(
-              body!,
-              style: TextStyle(
-                fontSize: 16,
-                height: 1.65,
-                color: palette.shade100,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -27,6 +27,27 @@ class BibleWondersApp extends ConsumerStatefulWidget {
 class _BibleWondersAppState extends ConsumerState<BibleWondersApp> {
   late final GoRouter _router = AppRouter.build();
 
+  // There is no `systemFonts` listener here, and it is worth saying why, since
+  // it is the obvious safeguard for the bug that `main`'s font preload fixes.
+  //
+  // A font arriving is not a rebuild: the framework notifies
+  // `PaintingBinding.systemFonts`, every `RenderParagraph` marks itself dirty
+  // and lays out again, and no widget's `build` runs. So anything a widget
+  // *computed* from text metrics — the grids' extents, the reading gutter, the
+  // path chips' arrangement, every app bar's height — keeps a number taken in
+  // the old face. Rebuilding on that notification looks like the answer.
+  //
+  // It is not, here. `setState` on this widget makes a fresh
+  // `MaterialApp.router`, but GoRouter serves cached pages and does not re-run a
+  // route's builder for it, so the screens never rebuild and their heights are
+  // never recomputed. That is measured, not assumed — see
+  // `app_router_rebuild_test`. A listener would have been a comfort that did
+  // nothing.
+  //
+  // What actually fixes it is upstream: `main` waits for all eight bundled
+  // variants before the first frame, so nothing is ever measured in a face it
+  // will not be painted in.
+
   @override
   Widget build(BuildContext context) {
     // The palette is app-wide state, not a per-screen decision: it changes as

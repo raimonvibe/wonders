@@ -100,7 +100,12 @@ class SpeechAudioHandler extends BaseAudioHandler {
             : AudioProcessingState.ready,
         playing: state.isPlaying,
         queueIndex: state.index,
-        speed: state.rate,
+        // Always 1.0 here. [state.rate] is the TTS multiplier, not media
+        // playback speed. Publishing the user rate made Android's session
+        // report the reading as "1.6×" (etc.) and was a suspect for sticky
+        // wrong-speed behaviour across pages. TTS rate is applied only in
+        // SpeechController._applyRate.
+        speed: 1.0,
       ),
     );
   }

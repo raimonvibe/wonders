@@ -130,6 +130,106 @@ and the only claim on the listing the system itself enforces — there is no
 
 ### Closed testing
 
+Every build's notes are kept, not just the current one. They are the record of
+what the testers were told, and the next set is written against the last one
+rather than from memory — which is how `+4` came to claim a fix that had not
+worked.
+
+**Build 6 — current.** 470 characters of Play's 500.
+
+Counted, not estimated, and counted in UTF-16 code units because that is what
+Play counts: the first draft read as ~465 by eye and was 491. Each emoji is two
+units, not one, and `—` and the curled quotes are one each where an editor shows
+them as narrower than they cost.
+
+```
+<en-US>
+📖 Wonders and Hope — build 6
+
+Long titles were cut off in the top bar — "Abimelech's Household…" rather than the whole name. They now wrap and show in full.
+
+The four buttons on the home screen also clipped their labels at larger text sizes.
+
+Titles now carry a gold underline. ✨
+
+Everything else is unchanged:
+• 178 wonders, each with its passage
+• The whole Bible, and listening aloud 🎧
+
+Works fully offline. Nothing collected.
+
+Thanks for testing. 🙏
+</en-US>
+```
+
+The first draft of this was `+5`'s notes with the number changed — sharing named
+again as though it were news. It is not: sharing was fixed *in* `+5` and `+6`
+did not touch it. Repeating it would send testers to re-test something that
+already works and say nothing about what did change, which is the mistake at the
+top of this section, made a second time.
+
+The truncated title is quoted as the tester would have seen it, because several
+of them will have: it happened at the ordinary text size, on the screen the app
+opens on, and on every wonder whose name is long. The gold underline is listed
+even though nobody asked for it — it is the one *visible* change here, and an
+unannounced change to every title reads as a glitch rather than as a decision.
+
+What is deliberately not mentioned is the cause. The typefaces now finish
+loading before the first frame, which is why the title measured wrong in the
+first place — see `theTypefacesHaveLoaded` in lib/main.dart. Correct and
+invisible: a tester cannot confirm it, and the sentence would cost the budget
+that the two things they *can* confirm are spending.
+
+**Build 5 — superseded.** ~468 characters.
+
+```
+<en-US>
+📖 Wonders and Hope — build 5
+
+Sharing a wonder as an image is properly fixed this time — build 3 couldn't make it, build 4 struck a line through every verse. Please try it. 🖼️
+
+The image now names the app, and links to the Play page.
+
+Everything else is unchanged:
+• 178 wonders, each with its passage beside it
+• The whole Bible (World English Bible)
+• Listen aloud, even with the screen off 🎧
+
+Works fully offline. Nothing collected.
+
+Thanks for testing. 🙏
+</en-US>
+```
+
+Names both earlier failures on purpose. A tester who tried sharing on `+4` and
+got a struck-through image remembers; owning it in one clause is cheaper than
+being the developer who said "it works now" twice. Two feature bullets were cut
+for the budget — release notes are for what changed, and the full list is in
+the store description.
+
+**Build 4 — superseded.** Claimed a fix that was only half a fix: the image
+built, and every line of it had a yellow rule struck through it.
+
+```
+<en-US>
+📖 Wonders and Hope — build 4
+
+Fixed: sharing a wonder as an image failed on every installed build. It works now — please try it. 🖼️
+
+Everything else is unchanged:
+• 178 wonders, each with its passage beside it
+• The whole Bible (World English Bible)
+• Listen aloud, even with the screen off 🎧
+• Keep verses with a colour and a note
+
+Works fully offline. No account, no ads, nothing collected.
+
+Thanks for testing — tell me anything that feels off. 🙏
+</en-US>
+```
+
+**Build 3 — the first thing the testers saw.** Sharing did not work at all on it.
+
 ```
 <en-US>
 📖 The first build of Wonders and Hope.
@@ -254,7 +354,31 @@ Verified at build time rather than assumed:
 Owner:   CN=Wonders and Hope, OU=Mobile, O=Raimonvibe, L=Amsterdam, ST=NH, C=NL
 SHA-256: F7:98:A5:4E:37:49:53:92:93:90:8A:22:33:76:0B:00:
          B8:AE:55:B0:E7:DE:A2:9C:38:A3:A2:3A:DA:21:78:1D
-package  com.raimonvibe.wonders   versionCode 5   versionName 1.0.0
+package  com.raimonvibe.wonders   versionCode 6   versionName 1.0.0
+```
+
+Built 11 August 2026, 48.4 MB, at
+`build/app/outputs/bundle/release/app-release.aab`. The `Owner` and `SHA-256`
+above are that bundle's, read back with `keytool -printcert -jarfile`, and match
+`android/key.properties.example` to the byte.
+
+The `versionCode` cannot be read the same way — `aapt2` will not open an `.aab`
+(*"could not identify format of APK"*: the manifest inside a bundle is protobuf,
+not the binary XML in an APK), and `bundletool` is not installed here. It is
+read instead from the manifest Gradle merged on the way in:
+
+```
+build/app/intermediates/merged_manifest/release/processReleaseMainManifest/AndroidManifest.xml
+```
+
+which is the file that becomes the bundle's manifest, so it is the same number
+by construction rather than by inference.
+
+**`upload/app-release.aab` is still build 5** — the new bundle has not been
+copied over it, because build 5 may still be wanted. Move it deliberately:
+
+```bash
+cp build/app/outputs/bundle/release/app-release.aab store/play/upload/
 ```
 
 The fingerprint matches the one recorded in `android/key.properties.example`.
@@ -266,7 +390,7 @@ normal-looking bundle that Play rejects.
 
 ## Version
 
-`pubspec.yaml` is at **1.0.0+5** (`versionName` / `versionCode`).
+`pubspec.yaml` is at **1.0.0+6** (`versionName` / `versionCode`).
 
 Play rejects a `versionCode` it has already seen, so the bump is per *upload*,
 not per release — a rejected or replaced bundle still burns its number. Bump
