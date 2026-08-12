@@ -269,24 +269,22 @@ void main() {
       expect(spoken, contains('Nothing on this path matches.'));
     });
 
-    test('lists wonders in groups, not one tiny line each', () {
+    test('lists one chunk per wonder so the home list can follow along', () {
       final wonders = [
         testWonder(id: 'a', title: 'Alpha'),
         testWonder(id: 'b', title: 'Beta'),
-        testWonder(id: 'c', title: 'Gamma'),
-        testWonder(id: 'd', title: 'Delta'),
       ];
       final speakable = Speakables.wondersList(
         catalogCount: 10,
         path: const PathState(path: ReadingPath.catalog),
         wonders: wonders,
       );
-      final wonderChunks =
-          speakable.chunks.where((c) => c.anchor?.startsWith('wonder:') ?? false);
-      // 4 wonders → 2 groups of up to 3, not 4 (+ separate count).
-      expect(wonderChunks.length, 2);
-      expect(speakable.chunks.firstWhere((c) => c.anchor?.startsWith('wonder:') ?? false).text,
-          startsWith('4 wonders.'));
+      final wonderChunks = speakable.chunks
+          .where((c) => c.anchor?.startsWith('wonder:') ?? false)
+          .toList();
+      expect(wonderChunks, hasLength(2));
+      expect(wonderChunks.first.anchor, 'wonder:a');
+      expect(wonderChunks.last.anchor, 'wonder:b');
     });
   });
 }

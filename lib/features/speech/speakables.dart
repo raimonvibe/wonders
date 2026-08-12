@@ -269,42 +269,21 @@ class Speakables {
           )
         else if (wonders.isEmpty)
           const SpeechChunk('Nothing on this path matches.')
-        else
-          ..._wonderListChunks(wonders),
+        else ...[
+          SpeechChunk(
+            wonders.length == 1 ? '1 wonder.' : '${wonders.length} wonders.',
+          ),
+          // One chunk per wonder so the home list can highlight and scroll to
+          // the row being spoken. Pace between them is the controller's gap.
+          for (final wonder in wonders)
+            SpeechChunk(
+              '${wonder.title}. ${wonder.passage.label}.',
+              anchor: 'wonder:${wonder.id}',
+              label: wonder.title,
+            ),
+        ],
       ],
     );
-  }
-
-  /// Wonder titles for the home list, in small groups.
-  ///
-  /// One chunk per wonder (plus a separate "14 wonders.") was a stream of
-  /// ~30-character lines — correct rate, wrong pace. Three titles per
-  /// utterance keeps skip useful without the auctioneer effect.
-  static List<SpeechChunk> _wonderListChunks(List<Wonder> wonders) {
-    const groupSize = 3;
-    final chunks = <SpeechChunk>[];
-    for (var i = 0; i < wonders.length; i += groupSize) {
-      final group = wonders.sublist(
-        i,
-        i + groupSize > wonders.length ? wonders.length : i + groupSize,
-      );
-      final body = group
-          .map((w) => '${w.title}. ${w.passage.label}.')
-          .join(' ');
-      final text = i == 0
-          ? (wonders.length == 1
-              ? '1 wonder. $body'
-              : '${wonders.length} wonders. $body')
-          : body;
-      chunks.add(
-        SpeechChunk(
-          text,
-          anchor: 'wonder:${group.first.id}',
-          label: group.first.title,
-        ),
-      );
-    }
-    return chunks;
   }
 
   /// The 66 books, by testament, with how many chapters each has.

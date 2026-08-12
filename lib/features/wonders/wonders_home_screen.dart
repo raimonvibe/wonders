@@ -13,13 +13,17 @@ import '../../theme/palette.dart';
 import '../../theme/states.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
+import '../speech/spoken_follow.dart';
 
 /// The way in: pick a path, then a wonder.
 ///
 /// The four paths, the sort toggle and the search box are the website's
 /// CatalogBrowser, minus the dock. Which wonders they resolve to is decided by
 /// visibleWondersProvider, not here.
-class WondersHomeScreen extends ConsumerWidget {
+///
+/// While Listen is reading this page, the row being spoken is tinted and kept
+/// on screen — same idea as the card and the passage reader.
+class WondersHomeScreen extends ConsumerStatefulWidget {
   const WondersHomeScreen({super.key});
 
   /// Stated once, because the bar's height is measured from the very string the
@@ -28,12 +32,92 @@ class WondersHomeScreen extends ConsumerWidget {
   static const _title = 'Wonders and Hope';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<WondersHomeScreen> createState() => _WondersHomeScreenState();
+}
+
+class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
+  final _scroll = ScrollController();
+  final _introKey = GlobalKey();
+  final _pathKey = GlobalKey();
+  final _wonderKeys = <String, GlobalKey>{};
+
+  /// The anchor we have already followed. Without it every rebuild would drag
+  /// the list back to the spoken row.
+  String? _followedAnchor;
+
+  int _listColumns = 1;
+  List<Wonder> _visibleWonders = const [];
+
+  GlobalKey _keyForWonder(String id) =>
+      _wonderKeys.putIfAbsent(id, GlobalKey.new);
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
+  /// Keep the spoken intro / path / wonder row on screen, once per anchor.
+  void _followSpoken(String? anchor) {
+    if (anchor == null) {
+      _followedAnchor = null;
+      return;
+    }
+    if (anchor == _followedAnchor) return;
+    _followedAnchor = anchor;
+
+    final GlobalKey? key;
+    var wonderIndex = -1;
+    if (anchor == 'intro') {
+      key = _introKey;
+    } else if (anchor == 'path') {
+      key = _pathKey;
+    } else if (anchor.startsWith('wonder:')) {
+      final id = anchor.substring('wonder:'.length);
+      key = _keyForWonder(id);
+      wonderIndex = _visibleWonders.indexWhere((w) => w.id == id);
+    } else {
+      key = null;
+    }
+    if (key == null) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      // Lazy list rows below the fold have no context yet. Jump near the
+      // estimated row so the tile builds, then pin it precisely.
+      if (key!.currentContext == null &&
+          _scroll.hasClients &&
+          wonderIndex >= 0) {
+        const headerEstimate = 320.0;
+        const rowEstimate = 76.0;
+        final row = wonderIndex ~/ _listColumns;
+        final estimated = headerEstimate + row * rowEstimate;
+        await _scroll.animateTo(
+          estimated.clamp(0.0, _scroll.position.maxScrollExtent),
+          duration: const Duration(milliseconds: 280),
+          curve: Curves.easeOut,
+        );
+        if (!mounted) return;
+      }
+      await ensureSpokenVisible(key);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final repo = ref.watch(wondersProvider);
     final state = ref.watch(pathProvider);
     final controller = ref.read(pathProvider.notifier);
     final wonders = ref.watch(visibleWondersProvider);
+    _visibleWonders = wonders;
     final palette = ref.watch(themeProvider);
+    final spokenAnchor = ref.watch(
+      speechProvider.select((s) {
+        if (!s.isSource(Speakables.wondersListId)) return null;
+        return s.anchor;
+      }),
+    );
+    _followSpoken(spokenAnchor);
 
     return Scaffold(
       // The same bar the Bible tab wears, down to the widget: a plain AppBar on
@@ -51,10 +135,10 @@ class WondersHomeScreen extends ConsumerWidget {
         // get and therefore a line break the height has to allow for.
         toolbarHeight: AppBarTitle.toolbarHeightFor(
           context,
-          _title,
+          WondersHomeScreen._title,
           actions: 1,
         ),
-        title: const AppBarTitle(_title, actions: 1),
+        title: const AppBarTitle(WondersHomeScreen._title, actions: 1),
         actions: [
           // Reads the page as it stands — what this is, which path is in force,
           // and the wonders that path resolves to. Searching or switching path
@@ -95,9 +179,8 @@ class WondersHomeScreen extends ConsumerWidget {
             final gutter = contentGutter(box.maxWidth);
             final columns =
                 box.maxWidth - gutter * 2 >= catalogTwoColumnFrom ? 2 : 1;
+            _listColumns = columns;
             return _body(
-              context,
-              ref,
               gutter: gutter,
               columns: columns,
               repo: repo,
@@ -105,6 +188,7 @@ class WondersHomeScreen extends ConsumerWidget {
               controller: controller,
               wonders: wonders,
               palette: palette,
+              spokenAnchor: spokenAnchor,
             );
           },
         ),
@@ -112,9 +196,7 @@ class WondersHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _body(
-    BuildContext context,
-    WidgetRef ref, {
+  Widget _body({
     required double gutter,
     required int columns,
     required WondersRepository repo,
@@ -122,8 +204,10 @@ class WondersHomeScreen extends ConsumerWidget {
     required PathController controller,
     required List<Wonder> wonders,
     required Palette palette,
+    required String? spokenAnchor,
   }) {
     return CustomScrollView(
+      controller: _scroll,
       slivers: [
         // Everything below the bar is content, and shares one gutter. The
         // 16 pt paddings inside each sliver are the phone's margin and stay
@@ -139,6 +223,7 @@ class WondersHomeScreen extends ConsumerWidget {
             // 56 pt bar it was touching the chrome.
             SliverToBoxAdapter(
               child: Padding(
+                key: _introKey,
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Text(
                   '${repo.count} wonders, each with the passage it happened in.',
@@ -158,8 +243,11 @@ class WondersHomeScreen extends ConsumerWidget {
             // no prompt read as filters already applied rather than as a choice
             // being offered, and to a screen reader they were four unrelated
             // buttons in a row with nothing to say what they select between.
+            //
+            // Keyed so Listen can scroll here while the path blurb is spoken.
             SliverToBoxAdapter(
               child: Padding(
+                key: _pathKey,
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -248,7 +336,12 @@ class WondersHomeScreen extends ConsumerWidget {
                 SliverList.builder(
                   itemCount: (wonders.length + columns - 1) ~/ columns,
                   itemBuilder: (context, row) {
-                    if (columns == 1) return _WonderTile(wonder: wonders[row]);
+                    Widget tileFor(Wonder wonder) => _WonderTile(
+                          key: _keyForWonder(wonder.id),
+                          wonder: wonder,
+                          spoken: spokenAnchor == 'wonder:${wonder.id}',
+                        );
+                    if (columns == 1) return tileFor(wonders[row]);
                     final first = row * columns;
                     return Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,7 +349,7 @@ class WondersHomeScreen extends ConsumerWidget {
                         for (var column = 0; column < columns; column++)
                           Expanded(
                             child: first + column < wonders.length
-                                ? _WonderTile(wonder: wonders[first + column])
+                                ? tileFor(wonders[first + column])
                                 // The last row of an odd count. Empty rather
                                 // than absent, so the tile beside it keeps its
                                 // half of the width instead of stretching to
@@ -651,9 +744,14 @@ class _EmptyState extends StatelessWidget {
 }
 
 class _WonderTile extends ConsumerWidget {
-  const _WonderTile({required this.wonder});
+  const _WonderTile({
+    super.key,
+    required this.wonder,
+    required this.spoken,
+  });
 
   final Wonder wonder;
+  final bool spoken;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -671,31 +769,39 @@ class _WonderTile extends ConsumerWidget {
         : '${wonder.passage.label} · also in '
             '${parallels.map((w) => w.passage.bookName).join(', ')}';
 
-    return ListTile(
-      // Which testament, before the tap rather than after it. Opening a card
-      // repaints the whole app green or blue, and until now nothing on the way
-      // in said which it would be — the colour change read as a glitch. It is
-      // the same left rule a kept verse wears, so it is a mark the reader has
-      // already met.
-      leading: _TestamentRule(testament: wonder.testament),
-      // ListTile reserves an icon's worth of room for a leading widget, and a
-      // 4pt rule floating in 40pt of space reads as a rendering fault. Told the
-      // truth about its width, it sits against the margin like the rule on a
-      // kept verse does.
-      minLeadingWidth: 4,
-      horizontalTitleGap: 14,
-      title: Text(wonder.title, maxLines: 2, overflow: TextOverflow.ellipsis),
-      subtitle: Text(
-        subtitle,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        // The app's own palette, not the wonder's. The rule already says which
-        // testament this is; colouring the reference too would put two greens
-        // and two blues in one list of text and read as an inconsistency
-        // rather than as a second copy of the same fact.
-        style: TextStyle(color: palette.shade300, fontSize: 12),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      decoration: BoxDecoration(
+        color: spoken ? Palette.accent.withValues(alpha: 0.16) : null,
+        borderRadius: BorderRadius.circular(10),
       ),
-      onTap: () => context.go('/wonders/${wonder.id}'),
+      child: ListTile(
+        // Which testament, before the tap rather than after it. Opening a card
+        // repaints the whole app green or blue, and until now nothing on the way
+        // in said which it would be — the colour change read as a glitch. It is
+        // the same left rule a kept verse wears, so it is a mark the reader has
+        // already met.
+        leading: _TestamentRule(testament: wonder.testament),
+        // ListTile reserves an icon's worth of room for a leading widget, and a
+        // 4pt rule floating in 40pt of space reads as a rendering fault. Told the
+        // truth about its width, it sits against the margin like the rule on a
+        // kept verse does.
+        minLeadingWidth: 4,
+        horizontalTitleGap: 14,
+        title: Text(wonder.title, maxLines: 2, overflow: TextOverflow.ellipsis),
+        subtitle: Text(
+          subtitle,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          // The app's own palette, not the wonder's. The rule already says which
+          // testament this is; colouring the reference too would put two greens
+          // and two blues in one list of text and read as an inconsistency
+          // rather than as a second copy of the same fact.
+          style: TextStyle(color: palette.shade300, fontSize: 12),
+        ),
+        onTap: () => context.go('/wonders/${wonder.id}'),
+      ),
     );
   }
 }

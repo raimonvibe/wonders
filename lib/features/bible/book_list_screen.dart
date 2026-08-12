@@ -11,12 +11,16 @@ import '../../theme/palette.dart';
 import '../../theme/states.dart';
 import '../speech/listen_button.dart';
 import '../speech/speakables.dart';
+import '../speech/spoken_follow.dart';
 
 /// All 66 books, Old Testament then New.
 ///
 /// The website sizes this grid with container queries so it works in the
 /// docked pane; on a phone there is only one pane, so a plain responsive grid
 /// is the honest translation.
+///
+/// While Listen is reading this page, the book being spoken is tinted and kept
+/// on screen.
 class BookListScreen extends ConsumerStatefulWidget {
   const BookListScreen({super.key});
 
@@ -26,13 +30,51 @@ class BookListScreen extends ConsumerStatefulWidget {
 
 class _BookListScreenState extends ConsumerState<BookListScreen> {
   late final Future<List<Book>> _books = ref.read(bibleProvider).books();
+  final _scroll = ScrollController();
+  final _bookKeys = <String, GlobalKey>{};
+
+  /// The anchor we have already followed. Without it every rebuild would drag
+  /// the grid back to the spoken book.
+  String? _followedAnchor;
 
   /// Stated once, so the bar's height is measured from the string it paints.
   static const _title = 'The Bible';
 
+  GlobalKey _keyFor(String bookId) =>
+      _bookKeys.putIfAbsent(bookId, GlobalKey.new);
+
+  void _followSpoken(String? anchor) {
+    if (anchor == null) {
+      _followedAnchor = null;
+      return;
+    }
+    if (anchor == _followedAnchor) return;
+    _followedAnchor = anchor;
+
+    if (!anchor.startsWith('book:')) return;
+    final key = _keyFor(anchor.substring('book:'.length));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ensureSpokenVisible(key);
+    });
+  }
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final palette = ref.watch(themeProvider);
+    final spokenAnchor = ref.watch(
+      speechProvider.select((s) {
+        if (!s.isSource(Speakables.booksId)) return null;
+        return s.anchor;
+      }),
+    );
+    _followSpoken(spokenAnchor);
 
     return Scaffold(
       appBar: AppBar(
@@ -73,14 +115,23 @@ class _BookListScreenState extends ConsumerState<BookListScreen> {
             final current = books.where((b) => b.testament == Testament.aNew);
 
             return ListView(
+              controller: _scroll,
               padding: const EdgeInsets.all(16),
               children: [
                 const _ResumeCard(),
                 _Heading('Old Testament', count: old.length),
-                _BookGrid(books: old.toList()),
+                _BookGrid(
+                  books: old.toList(),
+                  spokenAnchor: spokenAnchor,
+                  keyFor: _keyFor,
+                ),
                 const SizedBox(height: 28),
                 _Heading('New Testament', count: current.length),
-                _BookGrid(books: current.toList()),
+                _BookGrid(
+                  books: current.toList(),
+                  spokenAnchor: spokenAnchor,
+                  keyFor: _keyFor,
+                ),
                 const SizedBox(height: 32),
               ],
             );
@@ -138,9 +189,15 @@ class _Heading extends StatelessWidget {
 }
 
 class _BookGrid extends StatelessWidget {
-  const _BookGrid({required this.books});
+  const _BookGrid({
+    required this.books,
+    required this.spokenAnchor,
+    required this.keyFor,
+  });
 
   final List<Book> books;
+  final String? spokenAnchor;
+  final GlobalKey Function(String bookId) keyFor;
 
   @override
   Widget build(BuildContext context) {
@@ -163,36 +220,49 @@ class _BookGrid extends StatelessWidget {
       itemCount: books.length,
       itemBuilder: (context, index) {
         final book = books[index];
+        final spoken = spokenAnchor == 'book:${book.id}';
         // The tile shows a name and a bare number, which is only legible
         // because the tiles are all the same shape and the number is always
         // small — read aloud, it came out as "Genesis 50" and sounded like a
         // reference to a chapter that does not exist. The label is for the ear;
         // the number stays as it looks.
         return Semantics(
+          key: keyFor(book.id),
           button: true,
           label: '${book.name}, ${book.chapterCount} chapters',
           excludeSemantics: true,
-          child: Card(
-            margin: EdgeInsets.zero,
-            child: InkWell(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: spoken ? Palette.accent.withValues(alpha: 0.16) : null,
               borderRadius: BorderRadius.circular(16),
-              onTap: () => context.go('/bible/${book.id}'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(book.name, overflow: TextOverflow.ellipsis),
-                    ),
-                    // A name long enough to be cut still ends in an ellipsis,
-                    // and without this the ellipsis touched the number:
-                    // "2 Chronicles36" read as one word.
-                    const SizedBox(width: 8),
-                    Text(
-                      '${book.chapterCount}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
+            ),
+            child: Card(
+              margin: EdgeInsets.zero,
+              color: spoken ? Colors.transparent : null,
+              elevation: spoken ? 0 : null,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => context.go('/bible/${book.id}'),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child:
+                            Text(book.name, overflow: TextOverflow.ellipsis),
+                      ),
+                      // A name long enough to be cut still ends in an ellipsis,
+                      // and without this the ellipsis touched the number:
+                      // "2 Chronicles36" read as one word.
+                      const SizedBox(width: 8),
+                      Text(
+                        '${book.chapterCount}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

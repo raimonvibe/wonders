@@ -83,11 +83,10 @@ class _WonderCardBodyState extends ConsumerState<WonderCardBody> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.isAttached) return;
-      // Jump, do not animate. Animated scrollTo every heading fought the TTS
-      // binder on the emulator (frame skips + "reads too fast" while the rate
-      // log still said 1.0×). Keeping the spoken section on screen is enough.
-      _scroll.jumpTo(
+      _scroll.scrollTo(
         index: index,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
         // A third of the way down, so the line being read has the lines it is
         // about to reach visible underneath it.
         alignment: 0.3,

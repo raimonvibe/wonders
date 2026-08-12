@@ -135,7 +135,54 @@ what the testers were told, and the next set is written against the last one
 rather than from memory — which is how `+4` came to claim a fix that had not
 worked.
 
-**Build 6 — current.** 470 characters of Play's 500.
+**Build 8 — current.** Paste this for the closed-testing upload of `1.0.0+8`.
+
+```
+<en-US>
+📖 Wonders and Hope — build 8
+
+Listening aloud now highlights and scrolls with the voice on the home list and the Bible books grid — the same follow-along the card and passage already had.
+
+Everything else is unchanged:
+• 178 wonders, each with its passage
+• The whole Bible, and listening aloud 🎧
+
+Works fully offline. Nothing collected.
+
+Thanks for testing. 🙏
+</en-US>
+```
+
+What changed in this build is only the follow-along on those two lists. The
+card and passage already moved with the voice in build 7; naming them again as
+news would send testers to re-check work they already signed off. Title wrap
+and the gold underline stay out for the same reason — they shipped in 6 / 7.
+
+**Build 7 — superseded.** Card scroll-follow; title wrap and path chips kept
+from 6's notes because 7 was the first closed-testing upload that carried them
+together with the card change.
+
+```
+<en-US>
+📖 Wonders and Hope — build 7
+
+While a wonder is read aloud, the card now scrolls with the voice — the same follow-along as the passage reader.
+
+Long titles in the top bar wrap in full instead of cutting off, and the home-screen path buttons keep their labels at larger text sizes.
+
+Titles wear a gold underline. ✨
+
+Everything else is unchanged:
+• 178 wonders, each with its passage
+• The whole Bible, and listening aloud 🎧
+
+Works fully offline. Nothing collected.
+
+Thanks for testing. 🙏
+</en-US>
+```
+
+**Build 6 — superseded.** 470 characters of Play's 500.
 
 Counted, not estimated, and counted in UTF-16 code units because that is what
 Play counts: the first draft read as ~465 by eye and was 491. Each emoji is two
