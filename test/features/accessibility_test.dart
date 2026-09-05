@@ -23,9 +23,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// hand-written expectations because they check the whole tree rather than the
 /// parts somebody remembered to assert on.
 ///
-/// Both of this app's palettes get a run: pine and ocean are different greens
-/// and blues over different grounds, and a contrast ratio that clears 4.5:1 in
-/// one is not thereby cleared in the other.
+/// Every one of this app's palettes gets a run: pine, ocean and cedar are
+/// different greens, blues and browns over different grounds, and a contrast
+/// ratio that clears 4.5:1 in one is not thereby cleared in the others.
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -86,7 +86,11 @@ void main() {
     await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
   }
 
-  for (final entry in {'pine': Palette.pine, 'ocean': Palette.ocean}.entries) {
+  for (final entry in {
+    'pine': Palette.pine,
+    'ocean': Palette.ocean,
+    'cedar': Palette.cedar,
+  }.entries) {
     testWidgets('the catalog is accessible in ${entry.key}', (tester) async {
       final handle = tester.ensureSemantics();
       await pump(tester, const WondersHomeScreen(), palette: entry.value);

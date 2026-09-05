@@ -42,7 +42,7 @@ class SocialLink {
 
 /// The colour `.social-icons .icon` inherits in dark mode: `rgba(255,255,255,.72)`.
 ///
-/// Both of this app's themes are dark, so the website's `.dark` rules are the
+/// Every one of this app's themes is dark, so the website's `.dark` rules are the
 /// ones that apply — which is also why X, GitHub, Medium and TikTok are white
 /// here rather than the `#000` they take on a light page.
 const _inherited = Color(0xB8FFFFFF);

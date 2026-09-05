@@ -4,11 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../models/wonder.dart' show Testament;
 import 'palette.dart';
 
-/// Builds the two dark themes.
+/// Builds the dark themes.
 ///
-/// A note carried over from the website: both themes are dark, and the toggle
-/// swaps a green mood for a blue one rather than light for dark. Flutter's
-/// `Brightness.dark` is correct for both.
+/// A note carried over from the website: every theme is dark, and the toggle
+/// swaps a green mood for a blue one — or pins brown — rather than light for
+/// dark. Flutter's `Brightness.dark` is correct for all three.
 class AppTheme {
   const AppTheme._();
 

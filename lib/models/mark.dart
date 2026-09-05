@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 /// The colours a verse can be marked in.
 ///
-/// Both app themes are dark, so these are stated as translucent tints rather
-/// than as inks: laid over pine or over ocean they read as the same four
-/// colours, where four opaque swatches would fight one palette or the other.
+/// Every app theme is dark, so these are stated as translucent tints rather
+/// than as inks: laid over pine, ocean or cedar they read as the same four
+/// colours, where four opaque swatches would fight one palette or another.
 /// Ids are stored, not indices, so reordering this list never repaints
 /// somebody's Bible.
 enum HighlightColour {

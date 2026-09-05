@@ -29,16 +29,14 @@ final bibleProvider = Provider<BibleRepository>((ref) {
 
 /* --- theme ---------------------------------------------------------------- */
 
-/// Which testament the reader is currently in. The app wears pine while you
-/// are in the Old Testament and ocean in the New, unless the palette is
-/// pinned in settings.
+/// Which colour the app is wearing.
+///
+/// Follow mode wears pine in the Old Testament and ocean in the New. Settings
+/// can pin any palette — including cedar, which Follow never chooses — and a
+/// pin is never overridden by navigation.
 class ThemeController extends StateNotifier<Palette> {
   ThemeController(this._prefs)
-      : super(
-          AppTheme.paletteFor(
-            Testament.parse(_prefs.themeLock ?? Testament.old.id),
-          ),
-        );
+      : super(Palette.lockedOf(_prefs.themeLock) ?? Palette.pine);
 
   final Prefs _prefs;
 
@@ -52,9 +50,16 @@ class ThemeController extends StateNotifier<Palette> {
     if (next != state) state = next;
   }
 
-  Future<void> lockTo(Testament? testament) async {
-    await _prefs.setThemeLock(testament?.id);
-    if (testament != null) state = AppTheme.paletteFor(testament);
+  /// `null` returns to Follow. Cedar is not a follow colour, so unlocking it
+  /// lands on pine rather than leaving the reader in a brown that navigation
+  /// will never replace.
+  Future<void> lockTo(Palette? palette) async {
+    await _prefs.setThemeLock(palette?.id);
+    if (palette != null) {
+      state = palette;
+    } else if (state == Palette.cedar) {
+      state = Palette.pine;
+    }
   }
 }
 

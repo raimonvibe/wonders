@@ -61,14 +61,14 @@ class Prefs {
   Future<void> setLastChapterId(String id) =>
       _prefs.setString(_lastChapterKey, id);
 
-  /// Null means "follow the testament being read"; a value pins one palette.
-  /// See ThemeController.
+  /// Null means "follow the testament being read"; a value pins one palette
+  /// by its [Palette.id]. See ThemeController.
   String? get themeLock => _prefs.getString(_themeLockKey);
-  Future<void> setThemeLock(String? testamentId) async {
-    if (testamentId == null) {
+  Future<void> setThemeLock(String? paletteId) async {
+    if (paletteId == null) {
       await _prefs.remove(_themeLockKey);
     } else {
-      await _prefs.setString(_themeLockKey, testamentId);
+      await _prefs.setString(_themeLockKey, paletteId);
     }
   }
 

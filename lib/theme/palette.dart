@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 
-/// The two palettes, lifted from ../../tailwind.config.js so the app and the
-/// website stay the same colour. Both are dark: pine is the Old Testament
-/// green, ocean the New Testament blue.
+/// The palettes the app can wear.
+///
+/// Pine and ocean are lifted from ../../tailwind.config.js so the app and the
+/// website stay the same colour. Cedar is app-only: the brown linear gradient
+/// from `#6B4223` down to `#4A2E18`. All three are dark. Pine is the Old
+/// Testament green, ocean the New Testament blue, cedar a pinned brown.
 ///
 /// Polarity matches Tailwind's: 50 is the lightest (reading text), 900 the
 /// deepest (page ground).
 class Palette {
   const Palette._({
+    required this.id,
+    required this.label,
     required this.shade50,
     required this.shade100,
     required this.shade200,
@@ -19,6 +24,12 @@ class Palette {
     required this.shade800,
     required this.shade900,
   });
+
+  /// What settings and prefs store. Stable; do not rename.
+  final String id;
+
+  /// The name on the More tab: Green, Blue, Brown.
+  final String label;
 
   final Color shade50;
   final Color shade100;
@@ -33,6 +44,8 @@ class Palette {
 
   /// Old Testament green.
   static const pine = Palette._(
+    id: 'pine',
+    label: 'Green',
     shade50: Color(0xFFEAF6F0),
     shade100: Color(0xFFCFE9DC),
     shade200: Color(0xFFA9D6C1),
@@ -47,6 +60,8 @@ class Palette {
 
   /// New Testament blue.
   static const ocean = Palette._(
+    id: 'ocean',
+    label: 'Blue',
     shade50: Color(0xFFEAF2FB),
     shade100: Color(0xFFD0E3F6),
     shade200: Color(0xFFA8CAEC),
@@ -59,7 +74,48 @@ class Palette {
     shade900: Color(0xFF041D33),
   );
 
-  /// Used sparingly for highlights and focus, in both themes.
+  /// Pinned brown. The page ground is the linear gradient between the two
+  /// colours that define it: `#6B4223` at the top, `#4A2E18` at the foot.
+  static const cedar = Palette._(
+    id: 'cedar',
+    label: 'Brown',
+    shade50: Color(0xFFF6EDE4),
+    shade100: Color(0xFFE9D6C4),
+    shade200: Color(0xFFD4B496),
+    shade300: Color(0xFFC7A48A),
+    shade400: Color(0xFFBD9475),
+    shade500: Color(0xFF8F5E32),
+    shade600: Color(0xFF7A4C29),
+    shade700: Color(0xFF6B4223),
+    shade800: Color(0xFF5A381E),
+    shade900: Color(0xFF4A2E18),
+  );
+
+  /// Every palette a reader can pin. Follow is the absence of a pin, not a
+  /// fourth entry: it wears [pine] or [ocean] according to the testament.
+  static const values = [pine, ocean, cedar];
+
+  /// The lock stored in prefs, or null for Follow.
+  ///
+  /// `old` and `new` are the ids this used to store when a pin was a testament
+  /// rather than a palette. They still resolve, so a reader who pinned Green
+  /// or Blue before cedar existed keeps the colour they chose.
+  static Palette? lockedOf(String? id) => switch (id) {
+        'pine' || 'old' => pine,
+        'ocean' || 'new' => ocean,
+        'cedar' => cedar,
+        _ => null,
+      };
+
+  /// Green on the left, blue on the right — the Follow chip's preview, so the
+  /// control that means "both" actually shows both.
+  static const followPreview = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [Color(0xFF1D4D3A), Color(0xFF0A3D6B)],
+  );
+
+  /// Used sparingly for highlights and focus, in every theme.
   static const accent = Color(0xFFF4A261);
 
   /// Old gold, and the one flat value to reach for when a gradient will not do.
@@ -80,9 +136,9 @@ class Palette {
   /// because a highlight dead in the middle reads as a symmetrical graphic and
   /// not as light landing on something.
   ///
-  /// Chosen against both shade900 grounds, #0E2A20 and #041D33, which are the
-  /// darkest this app ever gets and the hardest test of a warm colour. The
-  /// three light stops clear 7:1 against either.
+  /// Chosen against every shade900 ground, including cedar's `#4A2E18`, which
+  /// is the lightest this app ever gets and the hardest test of a warm colour
+  /// against brown. The three light stops clear 7:1 against any of them.
   static const goldSheen = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
@@ -97,7 +153,8 @@ class Palette {
     stops: [0.0, 0.30, 0.46, 0.60, 0.85, 1.0],
   );
 
-  /// The page ground: `bg-theme-pine` / `bg-theme-ocean` in Tailwind.
+  /// The page ground: `bg-theme-pine` / `bg-theme-ocean` in Tailwind, and the
+  /// same three-stop fall for cedar.
   LinearGradient get pageGradient => LinearGradient(
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -116,4 +173,10 @@ class Palette {
         ],
         stops: const [0.0, 0.5, 1.0],
       );
+
+  @override
+  bool operator ==(Object other) => other is Palette && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
 }

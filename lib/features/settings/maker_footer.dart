@@ -14,7 +14,7 @@ import 'social_links.dart';
 /// them, brand-coloured at 88% opacity, lifting a pixel and coming to full
 /// strength on touch.
 ///
-/// Both of this app's themes are dark, so it is the stylesheet's `.dark` rules
+/// Every one of this app's themes is dark, so it is the stylesheet's `.dark` rules
 /// that apply — which is why X, GitHub, Medium and TikTok are white here and
 /// not the `#000` they take on a light page.
 class MakerFooter extends ConsumerWidget {

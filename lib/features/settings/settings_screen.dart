@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../models/wonder.dart';
 import '../../providers.dart';
 import '../../theme/app_bar_title.dart';
 import '../../theme/app_theme.dart';
@@ -79,27 +78,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
             const Divider(),
             const _Heading('Theme'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'follow', label: Text('Follow')),
-                  ButtonSegment(value: 'old', label: Text('Green')),
-                  ButtonSegment(value: 'new', label: Text('Blue')),
-                ],
-                selected: {lock ?? 'follow'},
-                showSelectedIcon: false,
-                onSelectionChanged: (selection) async {
-                  final choice = selection.first;
-                  await theme.lockTo(
-                    choice == 'follow' ? null : Testament.parse(choice),
-                  );
-                  if (mounted) setState(() {});
-                },
-              ),
+            _ThemePicker(
+              selected: Palette.lockedOf(lock),
+              onSelect: (palette) async {
+                await theme.lockTo(palette);
+                if (mounted) setState(() {});
+              },
             ),
             const Caption(
-              'Follow means green in the Old Testament, blue in the New.',
+              'Follow wears green in the Old Testament and blue in the New. '
+              'Pin a colour to keep it on every page.',
             ),
 
             const Divider(),
@@ -215,4 +203,112 @@ class _Heading extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 20, 16, 8),
         child: Text(text, style: Theme.of(context).textTheme.titleLarge),
       );
+}
+
+/// Follow plus every pin, as a pair of columns so four choices fit a phone
+/// without the labels collapsing the way a four-segment button would.
+class _ThemePicker extends StatelessWidget {
+  const _ThemePicker({required this.selected, required this.onSelect});
+
+  /// Null is Follow.
+  final Palette? selected;
+  final Future<void> Function(Palette?) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = <(String, Palette?, Gradient)>[
+      ('Follow', null, Palette.followPreview),
+      for (final palette in Palette.values)
+        (palette.label, palette, palette.pageGradient),
+    ];
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final width = (box.maxWidth - 8) / 2;
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final option in options)
+                SizedBox(
+                  width: width,
+                  child: _ThemeTile(
+                    label: option.$1,
+                    palette: option.$2,
+                    gradient: option.$3,
+                    selected: selected == option.$2,
+                    onTap: () => onSelect(option.$2),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The gradient is the theme; the name sits under it in the colour the page
+/// is already wearing, so a brown label is never asked to read on a green
+/// ground.
+class _ThemeTile extends StatelessWidget {
+  const _ThemeTile({
+    required this.label,
+    required this.palette,
+    required this.gradient,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final Palette? palette;
+  final Gradient gradient;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: palette == null ? 'Follow the testament' : '$label theme',
+      excludeSemantics: true,
+      child: Material(
+        color: scheme.surface.withValues(alpha: 0.55),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(
+            color: selected ? Palette.gold : scheme.outline.withValues(alpha: 0.5),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Ink(
+                height: 36,
+                decoration: BoxDecoration(gradient: gradient),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
