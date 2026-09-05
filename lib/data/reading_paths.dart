@@ -48,6 +48,54 @@ enum SortMode {
       this == SortMode.bible ? 'Bible order' : 'Best known first';
 }
 
+/// One tile in the "By theme" picker: a [WonderTheme], or a
+/// [WonderCollection] that cuts across them.
+///
+/// The picker offers both because they answer different questions about the
+/// same card — Healings is *what kind of wonder*, Wonders of Jesus is *whose*
+/// — and one card is very often an answer to both at once. Keeping them as two
+/// axes is what lets the Jesus tile exist without emptying the seven kinds;
+/// see [WonderCollection].
+class ThemeFilter {
+  const ThemeFilter.theme(WonderTheme theme)
+      : kind = theme,
+        collection = null;
+
+  const ThemeFilter.group(WonderCollection group)
+      : kind = null,
+        collection = group;
+
+  /// Exactly one of these is set.
+  final WonderTheme? kind;
+  final WonderCollection? collection;
+
+  /// Every tile the picker offers, in the order it shows them.
+  ///
+  /// Collections lead. Jesus is what most readers open this path looking for,
+  /// and putting it first also reads as what it is — a way through the seven
+  /// below it rather than an eighth peer.
+  static final List<ThemeFilter> tiles = List.unmodifiable([
+    for (final c in WonderCollection.values) ThemeFilter.group(c),
+    for (final t in WonderTheme.values) ThemeFilter.theme(t),
+  ]);
+
+  /// Stable id, for anything that has to name the filter — the read-aloud page
+  /// name, for one. Kinds and collections share the one namespace.
+  String get id => kind?.id ?? collection!.id;
+
+  @override
+  bool operator ==(Object other) =>
+      other is ThemeFilter &&
+      other.kind == kind &&
+      other.collection == collection;
+
+  @override
+  int get hashCode => Object.hash(kind, collection);
+
+  @override
+  String toString() => 'ThemeFilter($id)';
+}
+
 /// Which path the reader is on, and how the list under it is filtered.
 class PathState {
   const PathState({
@@ -62,7 +110,7 @@ class PathState {
   final SortMode sort;
 
   /// Active filter when [path] is theme or era; null means "show the picker".
-  final WonderTheme? theme;
+  final ThemeFilter? theme;
   final WonderEra? era;
 
   final String query;
@@ -70,7 +118,7 @@ class PathState {
   PathState copyWith({
     ReadingPath? path,
     SortMode? sort,
-    WonderTheme? theme,
+    ThemeFilter? theme,
     WonderEra? era,
     String? query,
     bool clearTheme = false,

@@ -261,7 +261,7 @@ void main() {
           catalogCount: 10,
           path: const PathState(
             path: ReadingPath.theme,
-            theme: WonderTheme.rescue,
+            theme: ThemeFilter.theme(WonderTheme.rescue),
           ),
           wonders: const [],
         ),

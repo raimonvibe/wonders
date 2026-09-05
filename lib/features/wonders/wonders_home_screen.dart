@@ -151,7 +151,8 @@ class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
               final pickerOptions =
                   state.path == ReadingPath.theme && state.theme == null
                       ? [
-                          for (final t in WonderTheme.values) repo.labelFor(t),
+                          for (final f in ThemeFilter.tiles)
+                            repo.labelForFilter(f),
                         ]
                       : state.path == ReadingPath.era && state.era == null
                           ? [
@@ -268,11 +269,15 @@ class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
             /* --- the filter picker, when the path needs one ---------------- */
             if (state.path == ReadingPath.theme && state.theme == null)
               _PickerGrid(
+                // The seven kinds, led by the collections that cut across
+                // them. Every tile is a ThemeFilter, so the grid does not have
+                // to know which sort it is holding.
                 labels: {
-                  for (final t in WonderTheme.values) t: repo.labelFor(t),
+                  for (final f in ThemeFilter.tiles) f: repo.labelForFilter(f),
                 },
                 counts: {
-                  for (final t in WonderTheme.values) t: repo.byTheme(t).length,
+                  for (final f in ThemeFilter.tiles)
+                    f: repo.byThemeFilter(f).length,
                 },
                 onPick: controller.setTheme,
               )
@@ -299,7 +304,7 @@ class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
                       child: InputChip(
                         label: Text(
                           state.theme != null
-                              ? repo.labelFor(state.theme!)
+                              ? repo.labelForFilter(state.theme!)
                               : repo.labelForEra(state.era!),
                         ),
                         onDeleted: () => state.theme != null

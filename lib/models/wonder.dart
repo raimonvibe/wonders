@@ -56,6 +56,46 @@ enum WonderEra {
 
   static WonderEra parse(String id) =>
       values.firstWhere((e) => e.id == id, orElse: () => WonderEra.torah);
+
+  /// The four Gospels, as against the Old Testament spans and Acts.
+  bool get isGospel =>
+      this == matthew || this == mark || this == luke || this == john;
+}
+
+/// A grouping that cuts across [WonderTheme] rather than sitting inside it.
+///
+/// A wonder has exactly one theme — what *kind* of thing happened. A
+/// collection answers a different question about the same card, so a wonder
+/// can belong to one and still keep its kind: a healing of Jesus is still a
+/// healing, and Healings still counts it.
+///
+/// Made an eighth WonderTheme instead, "Wonders of Jesus" would have taken all
+/// 72 Gospel accounts out of the seven kinds — Healings would have fallen from
+/// 50 to 14, and the four themes it gutted would have been left almost
+/// entirely Old Testament.
+enum WonderCollection {
+  jesus('jesus', 'Wonders of Jesus');
+
+  const WonderCollection(this.id, this.label);
+
+  /// Shares a namespace with [WonderTheme.id], because ThemeFilter names both
+  /// kinds of tile the same way. test/data/wonders_jesus_test.dart fails if
+  /// the two ever collide.
+  final String id;
+  final String label;
+
+  /// Whether [wonder] belongs here.
+  ///
+  /// Jesus is not a field on a wonder, and does not need to be: the catalog is
+  /// generated from lib/wonders/ and nothing in it is hand-maintained here.
+  /// Every wonder in the four Gospel eras is one He worked or stood at the
+  /// centre of — 72 accounts of 37 events — and every wonder worked by the
+  /// apostles is in `acts`. That invariant is what this reads, and
+  /// test/data/wonders_jesus_test.dart fails if a Gospel entry ever arrives
+  /// that is not His.
+  bool contains(Wonder wonder) => switch (this) {
+        WonderCollection.jesus => wonder.era.isGospel,
+      };
 }
 
 /// One wonder in the catalog.

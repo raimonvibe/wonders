@@ -54,7 +54,7 @@ void main() {
       // nothing, switch to By theme, pick one.
       controller.setQuery('jesus');
       controller.setPath(ReadingPath.theme);
-      controller.setTheme(WonderTheme.healing);
+      controller.setTheme(const ThemeFilter.theme(WonderTheme.healing));
 
       final visible = container.read(visibleWondersProvider);
       expect(visible, isNotEmpty);
@@ -77,8 +77,11 @@ void main() {
       final controller = container.read(pathProvider.notifier);
 
       controller.setPath(ReadingPath.theme);
-      controller.setTheme(WonderTheme.rescue);
-      expect(container.read(pathProvider).theme, WonderTheme.rescue);
+      controller.setTheme(const ThemeFilter.theme(WonderTheme.rescue));
+      expect(
+        container.read(pathProvider).theme,
+        const ThemeFilter.theme(WonderTheme.rescue),
+      );
 
       controller.setTheme(null);
       expect(container.read(pathProvider).theme, isNull);

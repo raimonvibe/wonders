@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
 import '../models/wonder.dart';
+import 'reading_paths.dart';
 
 /// The wonder catalog, loaded once from assets/wonders.json.
 ///
@@ -132,6 +133,21 @@ class WondersRepository {
   List<Wonder> byTheme(WonderTheme theme) =>
       wonders.where((w) => w.theme == theme).toList();
 
+  /// Every wonder in a collection, in Bible order.
+  ///
+  /// Unlike [byTheme] these overlap the kinds: the 72 wonders of Jesus are all
+  /// still counted under Healings, Raisings and the rest. That is the point of
+  /// a collection, not a leak — see [WonderCollection].
+  List<Wonder> byCollection(WonderCollection collection) =>
+      wonders.where(collection.contains).toList();
+
+  /// The wonders behind one tile of the "By theme" picker, whichever kind of
+  /// tile it is.
+  List<Wonder> byThemeFilter(ThemeFilter filter) {
+    final kind = filter.kind;
+    return kind != null ? byTheme(kind) : byCollection(filter.collection!);
+  }
+
   List<Wonder> byEra(WonderEra era) =>
       wonders.where((w) => w.era == era).toList();
 
@@ -223,4 +239,12 @@ class WondersRepository {
 
   String labelFor(WonderTheme theme) => themeLabels[theme] ?? theme.id;
   String labelForEra(WonderEra era) => eraLabels[era] ?? era.id;
+
+  /// A collection's label is stated in Dart rather than read from the asset,
+  /// because a collection is a way of reading the catalog and not a field in
+  /// it — the export has nothing to say about one.
+  String labelForFilter(ThemeFilter filter) {
+    final kind = filter.kind;
+    return kind != null ? labelFor(kind) : filter.collection!.label;
+  }
 }

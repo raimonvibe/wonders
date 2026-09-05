@@ -236,7 +236,7 @@ class PathController extends StateNotifier<PathState> {
 
   /// Same reasoning as [setPath]: crossing between the picker and the list
   /// takes the search box with it, so the query goes too.
-  void setTheme(WonderTheme? theme) => state = theme == null
+  void setTheme(ThemeFilter? theme) => state = theme == null
       ? state.copyWith(clearTheme: true, query: '')
       : state.copyWith(theme: theme, query: '');
 
@@ -274,7 +274,7 @@ final visibleWondersProvider = Provider<List<Wonder>>((ref) {
   List<Wonder> list = switch (state.path) {
     ReadingPath.startHere => repo.startHere(),
     ReadingPath.theme =>
-      state.theme == null ? const [] : repo.byTheme(state.theme!),
+      state.theme == null ? const [] : repo.byThemeFilter(state.theme!),
     ReadingPath.era => state.era == null ? const [] : repo.byEra(state.era!),
     ReadingPath.catalog => repo.wonders,
   };
