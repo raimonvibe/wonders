@@ -299,7 +299,7 @@ Thank you for testing — tell me anything that feels off. 🙏
 
 ### Production
 
-Paste this for the production upload of `1.0.0+10`. 492 of Play's 500,
+Paste this for the production upload of `1.0.0+12`. 492 of Play's 500,
 counted in UTF-16 code units.
 
 The first production notes described the app as a whole. This set keeps that
