@@ -116,6 +116,50 @@ void main() {
     });
   }
 
+  for (final (name, path) in [
+    ('theme', ReadingPath.theme),
+    ('era', ReadingPath.era),
+  ]) {
+    testWidgets('the $name picker carries the search box', (tester) async {
+      // The box used to appear only after a theme or an era had been picked,
+      // which put the one search in the app behind a choice the reader was
+      // making because they did not know where to look.
+      final container = await pumpHome(tester, textScale: 1.0, path: path);
+
+      expect(find.text('Search wonders, people and places'), findsOneWidget);
+      // No list under it yet, so no sort control and — the lie this avoids —
+      // no "0 wonders" standing over a grid of seven full tiles.
+      expect(find.text('Bible order'), findsNothing);
+      expect(find.text('0 wonders'), findsNothing);
+
+      // Typing turns the same page into its results, catalog-wide.
+      container.read(pathProvider.notifier).setQuery('bethesda');
+      await tester.pump();
+
+      final matches = container.read(visibleWondersProvider);
+      expect(matches, isNotEmpty);
+      expect(find.text('Bible order'), findsOneWidget);
+      expect(find.text(matches.first.title), findsOneWidget);
+
+      await scrollThrough(tester, screens: 2);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
+  testWidgets('a picker search that finds nothing offers no wider one',
+      (tester) async {
+    final container =
+        await pumpHome(tester, textScale: 1.6, path: ReadingPath.theme);
+    container.read(pathProvider.notifier).setQuery('zzzznotawonder');
+    await tester.pump();
+    await scrollThrough(tester, screens: 2);
+
+    // The picker already searched the whole catalog; there is nowhere wider.
+    expect(find.textContaining('Search the full catalog'), findsNothing);
+    expect(find.text('Clear search'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('an empty result lays out inside a sliver', (tester) async {
     // The shared EmptyState is hosted in an Expanded on the library screen and
     // in a sliver here, which arrive with bounded and unbounded height

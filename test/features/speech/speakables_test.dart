@@ -255,6 +255,36 @@ void main() {
       expect(spoken, isNot(contains('Nothing on this path matches.')));
     });
 
+    test('a search on a picker path reads its results, not the choices', () {
+      final speakable = Speakables.wondersList(
+        catalogCount: 10,
+        path: const PathState(path: ReadingPath.theme, query: 'alpha'),
+        wonders: [testWonder(id: 'a', title: 'Alpha')],
+        pickerOptions: const ['Rescue'],
+      );
+      final spoken = spokenText(speakable);
+      expect(spoken, isNot(contains('Choose a theme to continue')));
+      expect(spoken, contains('Alpha'));
+      expect(speakable.chunks.where((c) => c.anchor == 'picker'), isEmpty);
+    });
+
+    test('a search that finds nothing names the word, not the path', () {
+      final spoken = spokenText(
+        Speakables.wondersList(
+          catalogCount: 10,
+          path: const PathState(
+            path: ReadingPath.era,
+            query: 'zzzznotawonder',
+          ),
+          wonders: const [],
+        ),
+      );
+      // "Nothing on this path matches" would be the wrong account of a search
+      // that covered the whole catalog.
+      expect(spoken, contains('No wonder matches zzzznotawonder.'));
+      expect(spoken, isNot(contains('Nothing on this path matches.')));
+    });
+
     test('filtered path with no matches says empty', () {
       final spoken = spokenText(
         Speakables.wondersList(

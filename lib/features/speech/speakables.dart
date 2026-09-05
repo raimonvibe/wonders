@@ -228,9 +228,14 @@ class Speakables {
     required List<Wonder> wonders,
     List<String> pickerOptions = const [],
   }) {
-    final awaitingPicker =
-        (path.path == ReadingPath.theme && path.theme == null) ||
-            (path.path == ReadingPath.era && path.era == null);
+    final query = path.query.trim();
+
+    // A search on a picker page replaces the tiles with what it found, so a
+    // reader who presses Listen there should hear the results and not an offer
+    // of choices that are no longer on screen.
+    final awaitingPicker = query.isEmpty &&
+        ((path.path == ReadingPath.theme && path.theme == null) ||
+            (path.path == ReadingPath.era && path.era == null));
 
     final page = switch (path.path) {
       ReadingPath.theme when path.theme != null =>
@@ -268,7 +273,14 @@ class Speakables {
             anchor: 'picker',
           )
         else if (wonders.isEmpty)
-          const SpeechChunk('Nothing on this path matches.')
+          // A search from a picker page covers the whole catalog, so "on this
+          // path" would be the wrong account of what came up short. Name the
+          // word instead, the way the screen under it does.
+          SpeechChunk(
+            query.isEmpty
+                ? 'Nothing on this path matches.'
+                : 'No wonder matches $query.',
+          )
         else ...[
           SpeechChunk(
             wonders.length == 1 ? '1 wonder.' : '${wonders.length} wonders.',

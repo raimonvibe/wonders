@@ -215,10 +215,11 @@ class PathController extends StateNotifier<PathState> {
 
   /// Changing path resets the query as well as the filters.
   ///
-  /// It has to: the search box only exists on the list, so leaving a query
-  /// behind while the picker is up means the reader comes back to a box that
-  /// renders empty and a list filtered by a word they can no longer see. That
-  /// is what made picking a theme look like it did nothing at all.
+  /// The search box now follows the reader onto the picker pages, so this is no
+  /// longer about a query outliving its box — it is that a path is a fresh
+  /// question. Carrying "jesus" from Start Here onto By theme would answer a
+  /// question nobody asked, and the way to widen a search deliberately is
+  /// [searchWholeCatalog], which keeps the word on purpose.
   void setPath(ReadingPath path) {
     state = state.copyWith(
       path: path,
@@ -234,8 +235,13 @@ class PathController extends StateNotifier<PathState> {
     _save(_prefs.setSort(sort));
   }
 
-  /// Same reasoning as [setPath]: crossing between the picker and the list
-  /// takes the search box with it, so the query goes too.
+  /// Same reasoning as [setPath]: picking a theme or an era is a question in
+  /// its own right, and a word left over from the picker would narrow the
+  /// answer to it without saying so.
+  ///
+  /// Clearing on the way *in* is mostly belt and braces — the tiles are only on
+  /// screen when there is no query — but clearing on the way back out is what
+  /// the "back to the picker" chip relies on to show the tiles again.
   void setTheme(ThemeFilter? theme) => state = theme == null
       ? state.copyWith(clearTheme: true, query: '')
       : state.copyWith(theme: theme, query: '');
@@ -271,15 +277,26 @@ final visibleWondersProvider = Provider<List<Wonder>>((ref) {
   final repo = ref.watch(wondersProvider);
   final state = ref.watch(pathProvider);
 
+  final searching = state.query.trim().isNotEmpty;
+
   List<Wonder> list = switch (state.path) {
     ReadingPath.startHere => repo.startHere(),
-    ReadingPath.theme =>
-      state.theme == null ? const [] : repo.byThemeFilter(state.theme!),
-    ReadingPath.era => state.era == null ? const [] : repo.byEra(state.era!),
+    ReadingPath.theme when state.theme != null =>
+      repo.byThemeFilter(state.theme!),
+    ReadingPath.era when state.era != null => repo.byEra(state.era!),
+    // A picker path with nothing picked yet. With no query there is no list at
+    // all — the page is a grid of tiles — but a search there is a question
+    // about the catalog, not about the theme the reader has not chosen, so the
+    // scope is everything the picker could have led to. Which is all of it:
+    // every wonder carries a theme and an era, so the tiles cover the catalog
+    // between them.
+    ReadingPath.theme ||
+    ReadingPath.era =>
+      searching ? repo.wonders : const [],
     ReadingPath.catalog => repo.wonders,
   };
 
-  if (state.query.trim().isNotEmpty) {
+  if (searching) {
     // Intersect the other way around: repo.search already returns its matches
     // best-first, and that ranking is the whole point of searching. Filtering
     // the path's list by a set of ids would throw it away.

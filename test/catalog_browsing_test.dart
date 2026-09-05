@@ -137,6 +137,76 @@ void main() {
       expect(container.read(visibleWondersProvider), isNotEmpty);
     });
 
+    test('reaches the whole catalog from the theme picker', () async {
+      final container = await makeContainer();
+      final controller = container.read(pathProvider.notifier);
+
+      // On By theme with nothing picked, the page is a grid of tiles and there
+      // is no list under it.
+      controller.setPath(ReadingPath.theme);
+      expect(container.read(visibleWondersProvider), isEmpty);
+
+      // A word typed there is a question about the catalog, not about a theme
+      // the reader has not chosen — so it finds everything a search on Full
+      // catalog would, in the same best-first order.
+      controller.setQuery('jesus');
+      expect(
+        container.read(visibleWondersProvider).map((w) => w.id).toList(),
+        repo.search('jesus').map((w) => w.id).toList(),
+      );
+
+      // And clearing it puts the tiles back.
+      controller.setQuery('');
+      expect(container.read(visibleWondersProvider), isEmpty);
+    });
+
+    test('reaches the whole catalog from the era picker', () async {
+      final container = await makeContainer();
+      final controller = container.read(pathProvider.notifier);
+
+      controller.setPath(ReadingPath.era);
+      expect(container.read(visibleWondersProvider), isEmpty);
+
+      controller.setQuery('bethesda');
+      final visible = container.read(visibleWondersProvider);
+      expect(visible, isNotEmpty);
+      expect(
+        visible.map((w) => w.id).toList(),
+        repo.search('bethesda').map((w) => w.id).toList(),
+      );
+    });
+
+    test('a picker search that finds nothing has nothing to widen to',
+        () async {
+      final container = await makeContainer();
+      final controller = container.read(pathProvider.notifier);
+
+      controller.setPath(ReadingPath.theme);
+      controller.setQuery('zzzznotawonder');
+
+      // The picker already searched everything, so the empty state must not
+      // offer "search the full catalog" as though there were somewhere left.
+      expect(container.read(visibleWondersProvider), isEmpty);
+      expect(container.read(catalogMatchCountProvider), 0);
+    });
+
+    test('picking a theme still narrows to that theme', () async {
+      final container = await makeContainer();
+      final controller = container.read(pathProvider.notifier);
+
+      // The tiles are only tappable with the box empty, but the query must go
+      // either way — a leftover word would silently narrow the theme.
+      controller.setPath(ReadingPath.theme);
+      controller.setQuery('jesus');
+      controller.setTheme(const ThemeFilter.theme(WonderTheme.healing));
+
+      expect(container.read(pathProvider).query, isEmpty);
+      expect(
+        container.read(visibleWondersProvider).length,
+        repo.byTheme(WonderTheme.healing).length,
+      );
+    });
+
     test('keeps search order rather than the path order', () async {
       final container = await makeContainer();
       final controller = container.read(pathProvider.notifier);

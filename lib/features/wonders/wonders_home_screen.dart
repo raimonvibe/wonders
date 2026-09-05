@@ -147,19 +147,22 @@ class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
             sourceId: Speakables.wondersListId,
             source: () async {
               // Theme / era open on a picker; name those choices rather than
-              // reading an empty wonder list as "nothing matches".
-              final pickerOptions =
-                  state.path == ReadingPath.theme && state.theme == null
+              // reading an empty wonder list as "nothing matches". Not while a
+              // search is on, though — the tiles have given way to its results,
+              // and Speakables reads the same rule off the query.
+              final onPicker = state.query.trim().isEmpty;
+              final pickerOptions = onPicker &&
+                      state.path == ReadingPath.theme &&
+                      state.theme == null
+                  ? [for (final f in ThemeFilter.tiles) repo.labelForFilter(f)]
+                  : onPicker &&
+                          state.path == ReadingPath.era &&
+                          state.era == null
                       ? [
-                          for (final f in ThemeFilter.tiles)
-                            repo.labelForFilter(f),
+                          for (final e in repo.populatedEras())
+                            repo.labelForEra(e),
                         ]
-                      : state.path == ReadingPath.era && state.era == null
-                          ? [
-                              for (final e in repo.populatedEras())
-                                repo.labelForEra(e),
-                            ]
-                          : const <String>[];
+                      : const <String>[];
               return Speakables.wondersList(
                 catalogCount: repo.count,
                 path: state,
@@ -207,6 +210,13 @@ class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
     required Palette palette,
     required String? spokenAnchor,
   }) {
+    // The two picker pages, with nothing typed: the grid of tiles *is* the
+    // page. Type into the search box and the same page becomes its results,
+    // which is why this is a query test and not only a path test.
+    final picking = state.query.trim().isEmpty &&
+        ((state.path == ReadingPath.theme && state.theme == null) ||
+            (state.path == ReadingPath.era && state.era == null));
+
     return CustomScrollView(
       controller: _scroll,
       slivers: [
@@ -266,106 +276,129 @@ class _WondersHomeScreenState extends ConsumerState<WondersHomeScreen> {
               ),
             ),
 
-            /* --- the filter picker, when the path needs one ---------------- */
-            if (state.path == ReadingPath.theme && state.theme == null)
-              _PickerGrid(
-                // The seven kinds, led by the collections that cut across
-                // them. Every tile is a ThemeFilter, so the grid does not have
-                // to know which sort it is holding.
-                labels: {
-                  for (final f in ThemeFilter.tiles) f: repo.labelForFilter(f),
-                },
-                counts: {
-                  for (final f in ThemeFilter.tiles)
-                    f: repo.byThemeFilter(f).length,
-                },
-                onPick: controller.setTheme,
-              )
-            else if (state.path == ReadingPath.era && state.era == null)
-              _PickerGrid(
-                labels: {
-                  for (final e in repo.populatedEras()) e: repo.labelForEra(e),
-                },
-                counts: {
-                  for (final e in repo.populatedEras()) e: repo.byEra(e).length,
-                },
-                onPick: controller.setEra,
-              )
-            else ...[
-              // Which theme or era is in force, and the way back to the picker.
-              // Without this the only route to a second theme was to leave the
-              // path and come back.
-              if (state.theme != null || state.era != null)
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: InputChip(
-                        label: Text(
-                          state.theme != null
-                              ? repo.labelForFilter(state.theme!)
-                              : repo.labelForEra(state.era!),
-                        ),
-                        onDeleted: () => state.theme != null
-                            ? controller.setTheme(null)
-                            : controller.setEra(null),
-                        deleteIcon: const Icon(Icons.close, size: 18),
+            /* --- which theme or era is in force ---------------------------- */
+            //
+            // And the way back to the picker. Without this the only route to a
+            // second theme was to leave the path and come back.
+            if (state.theme != null || state.era != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: InputChip(
+                      label: Text(
+                        state.theme != null
+                            ? repo.labelForFilter(state.theme!)
+                            : repo.labelForEra(state.era!),
                       ),
+                      onDeleted: () => state.theme != null
+                          ? controller.setTheme(null)
+                          : controller.setEra(null),
+                      deleteIcon: const Icon(Icons.close, size: 18),
                     ),
                   ),
                 ),
+              ),
+
+            /* --- search, on every path, the two pickers included ----------- */
+            //
+            // The box used to appear only once a theme or an era had been
+            // chosen, which put the catalog's one search behind a choice the
+            // reader was making *because* they did not know where to look. A
+            // person who arrives with the word already — a name, a place, a
+            // sickness — should not have to guess which of seven kinds it
+            // lives under before they can type it.
+            //
+            // On a picker page it searches the whole catalog, because that is
+            // what the tiles below it add up to: every wonder carries a theme
+            // and an era, so between them the tiles cover everything. What the
+            // box looks for does not change with the page — search() in
+            // WondersRepository is the only search there is.
+            SliverToBoxAdapter(
+              child: _Toolbar(
+                state: state,
+                controller: controller,
+                count: wonders.length,
+                // With the tiles up there is no list to count or to sort, and
+                // "0 wonders" standing over a grid of seven full ones would be
+                // a plain lie.
+                summary: !picking,
+              ),
+            ),
+
+            if (picking)
+              // The tiles are the page while the box is empty; a search
+              // replaces them with what it found, and clearing it brings them
+              // back.
+              state.path == ReadingPath.theme
+                  ? _PickerGrid(
+                      // The seven kinds, led by the collections that cut
+                      // across them. Every tile is a ThemeFilter, so the grid
+                      // does not have to know which sort it is holding.
+                      labels: {
+                        for (final f in ThemeFilter.tiles)
+                          f: repo.labelForFilter(f),
+                      },
+                      counts: {
+                        for (final f in ThemeFilter.tiles)
+                          f: repo.byThemeFilter(f).length,
+                      },
+                      onPick: controller.setTheme,
+                    )
+                  : _PickerGrid(
+                      labels: {
+                        for (final e in repo.populatedEras())
+                          e: repo.labelForEra(e),
+                      },
+                      counts: {
+                        for (final e in repo.populatedEras())
+                          e: repo.byEra(e).length,
+                      },
+                      onPick: controller.setEra,
+                    )
+            else if (wonders.isEmpty)
               SliverToBoxAdapter(
-                child: _Toolbar(
+                child: _EmptyState(
                   state: state,
                   controller: controller,
-                  count: wonders.length,
+                  elsewhere: ref.watch(catalogMatchCountProvider),
                 ),
+              )
+            else
+              // One row per [columns] wonders. A Row of Expanded tiles rather
+              // than a SliverGrid because a grid wants a fixed extent and these
+              // rows do not have one: a title can wrap to two lines and so can
+              // the list of books that also tell it. Sized by the taller of the
+              // pair, the row cannot overflow at any text size, which is the
+              // failure gridTileExtent exists to prevent and the one a catalog
+              // of 178 rows would find.
+              SliverList.builder(
+                itemCount: (wonders.length + columns - 1) ~/ columns,
+                itemBuilder: (context, row) {
+                  Widget tileFor(Wonder wonder) => _WonderTile(
+                        key: _keyForWonder(wonder.id),
+                        wonder: wonder,
+                        spoken: spokenAnchor == 'wonder:${wonder.id}',
+                      );
+                  if (columns == 1) return tileFor(wonders[row]);
+                  final first = row * columns;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var column = 0; column < columns; column++)
+                        Expanded(
+                          child: first + column < wonders.length
+                              ? tileFor(wonders[first + column])
+                              // The last row of an odd count. Empty rather than
+                              // absent, so the tile beside it keeps its half of
+                              // the width instead of stretching to the full one.
+                              : const SizedBox.shrink(),
+                        ),
+                    ],
+                  );
+                },
               ),
-              if (wonders.isEmpty)
-                SliverToBoxAdapter(
-                  child: _EmptyState(
-                    state: state,
-                    controller: controller,
-                    elsewhere: ref.watch(catalogMatchCountProvider),
-                  ),
-                )
-              else
-                // One row per [columns] wonders. A Row of Expanded tiles
-                // rather than a SliverGrid because a grid wants a fixed extent
-                // and these rows do not have one: a title can wrap to two lines
-                // and so can the list of books that also tell it. Sized by the
-                // taller of the pair, the row cannot overflow at any text size,
-                // which is the failure gridTileExtent exists to prevent and the
-                // one a catalog of 178 rows would find.
-                SliverList.builder(
-                  itemCount: (wonders.length + columns - 1) ~/ columns,
-                  itemBuilder: (context, row) {
-                    Widget tileFor(Wonder wonder) => _WonderTile(
-                          key: _keyForWonder(wonder.id),
-                          wonder: wonder,
-                          spoken: spokenAnchor == 'wonder:${wonder.id}',
-                        );
-                    if (columns == 1) return tileFor(wonders[row]);
-                    final first = row * columns;
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        for (var column = 0; column < columns; column++)
-                          Expanded(
-                            child: first + column < wonders.length
-                                ? tileFor(wonders[first + column])
-                                // The last row of an odd count. Empty rather
-                                // than absent, so the tile beside it keeps its
-                                // half of the width instead of stretching to
-                                // the full one.
-                                : const SizedBox.shrink(),
-                          ),
-                      ],
-                    );
-                  },
-                ),
-            ],
 
             const SliverToBoxAdapter(child: SizedBox(height: 32)),
             ],
@@ -578,7 +611,13 @@ class _PickerGrid<T> extends StatelessWidget {
   }
 }
 
-/// The search box and the sort toggle.
+/// The search box, and — when there is a list under it — the tally and the sort
+/// toggle.
+///
+/// [summary] is what tells the two shapes apart. On a picker page with nothing
+/// typed the box stands alone: there is no list yet to count or to re-order,
+/// only tiles that carry their own tallies. The moment a word is typed the page
+/// becomes a list like any other, and the rest of the toolbar arrives with it.
 ///
 /// Stateful for one reason: the text box needs a controller. Left uncontrolled
 /// it keeps its own private copy of the text, which silently drifts from
@@ -590,11 +629,15 @@ class _Toolbar extends StatefulWidget {
     required this.state,
     required this.controller,
     required this.count,
+    this.summary = true,
   });
 
   final PathState state;
   final PathController controller;
   final int count;
+
+  /// Whether the tally and the sort control follow the box.
+  final bool summary;
 
   @override
   State<_Toolbar> createState() => _ToolbarState();
@@ -652,40 +695,43 @@ class _ToolbarState extends State<_Toolbar> {
             ),
             onChanged: controller.setQuery,
           ),
-          const SizedBox(height: 10),
-          // A Wrap, not a Row. "Bible order" and "Best known" inside a
-          // SegmentedButton come to most of a phone's width on their own, so
-          // the count beside them overflowed the moment the reader turned their
-          // system font up — the one setting a person who is struggling to read
-          // is most likely to have already changed. Wrapping drops the sort
-          // control onto its own line instead of striping the screen.
-          Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            spacing: 12,
-            runSpacing: 10,
-            children: [
-              Text(count == 1 ? '1 wonder' : '$count wonders'),
-              // Start Here is already an order; offering to re-sort it would
-              // undo the curation.
-              if (state.path != ReadingPath.startHere)
-                SegmentedButton<SortMode>(
-                  segments: const [
-                    ButtonSegment(
-                      value: SortMode.bible,
-                      label: Text('Bible order'),
-                    ),
-                    ButtonSegment(
-                      value: SortMode.bestKnown,
-                      label: Text('Best known'),
-                    ),
-                  ],
-                  selected: {state.sort},
-                  showSelectedIcon: false,
-                  onSelectionChanged: (s) => controller.setSort(s.first),
-                ),
-            ],
-          ),
+          if (widget.summary) ...[
+            const SizedBox(height: 10),
+            // A Wrap, not a Row. "Bible order" and "Best known" inside a
+            // SegmentedButton come to most of a phone's width on their own, so
+            // the count beside them overflowed the moment the reader turned
+            // their system font up — the one setting a person who is struggling
+            // to read is most likely to have already changed. Wrapping drops
+            // the sort control onto its own line instead of striping the
+            // screen.
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 12,
+              runSpacing: 10,
+              children: [
+                Text(count == 1 ? '1 wonder' : '$count wonders'),
+                // Start Here is already an order; offering to re-sort it would
+                // undo the curation.
+                if (state.path != ReadingPath.startHere)
+                  SegmentedButton<SortMode>(
+                    segments: const [
+                      ButtonSegment(
+                        value: SortMode.bible,
+                        label: Text('Bible order'),
+                      ),
+                      ButtonSegment(
+                        value: SortMode.bestKnown,
+                        label: Text('Best known'),
+                      ),
+                    ],
+                    selected: {state.sort},
+                    showSelectedIcon: false,
+                    onSelectionChanged: (s) => controller.setSort(s.first),
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     );
