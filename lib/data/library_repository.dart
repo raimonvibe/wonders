@@ -1,3 +1,5 @@
+import 'package:sqflite/sqflite.dart';
+
 import '../models/mark.dart';
 import 'library_database.dart';
 
@@ -24,11 +26,26 @@ class LibraryRepository {
     return rows.map(Mark.fromRow).toList();
   }
 
-  /// Insert or replace the mark on this verse. The unique index on
-  /// (chapter_id, verse) is declared ON CONFLICT REPLACE, so re-colouring a
-  /// verse updates it rather than accumulating rows.
+  /// Insert or replace the mark on this verse.
+  ///
+  /// The REPLACE has to be asked for here and not left to the schema. The
+  /// table declares ON CONFLICT REPLACE on the unique index over
+  /// (chapter_id, verse), but a mark that already exists carries its `id`,
+  /// and an `id` in the row is a second constraint — the rowid primary key,
+  /// whose conflict clause is the default ABORT. SQLite reached that one
+  /// first and threw `UNIQUE constraint failed: marks.id`, so every write to
+  /// a verse that was already marked failed: adding a note to it, and
+  /// re-colouring it. Only the first mark on a verse, which carries no id,
+  /// ever got through.
+  ///
+  /// ConflictAlgorithm.replace covers both constraints, and keeping the id in
+  /// the row is what lets the mark keep its identity across the replace.
   Future<Mark> save(Mark mark) async {
-    final id = await _database.db.insert('marks', mark.toRow());
+    final id = await _database.db.insert(
+      'marks',
+      mark.toRow(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
     return Mark(
       id: id,
       chapterId: mark.chapterId,

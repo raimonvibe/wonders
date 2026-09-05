@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -9,6 +10,11 @@ import 'package:sqflite/sqflite.dart';
 /// 2027. Scripture ships with the app; what the reader makes of it is theirs.
 class LibraryDatabase {
   LibraryDatabase._(this.db);
+
+  /// A library over a database the caller opened. Tests use it to run the real
+  /// repository against a real SQLite, in memory.
+  @visibleForTesting
+  const LibraryDatabase.over(this.db);
 
   static const _fileName = 'library.db';
   static const _schemaVersion = 1;
@@ -25,33 +31,37 @@ class LibraryDatabase {
     final db = await openDatabase(
       path,
       version: _schemaVersion,
-      onCreate: (db, version) async {
-        await db.execute('''
-          CREATE TABLE marks (
-            id          INTEGER PRIMARY KEY AUTOINCREMENT,
-            chapter_id  TEXT    NOT NULL,
-            verse       INTEGER NOT NULL,
-            book_id     TEXT    NOT NULL,
-            reference   TEXT    NOT NULL,
-            preview     TEXT    NOT NULL,
-            colour      TEXT    NOT NULL,
-            note        TEXT,
-            created_at  INTEGER NOT NULL,
-            UNIQUE (chapter_id, verse) ON CONFLICT REPLACE
-          )
-        ''');
-
-        // The list is read newest-first and the reader is read by chapter.
-        await db.execute(
-          'CREATE INDEX marks_by_chapter ON marks (chapter_id)',
-        );
-        await db.execute(
-          'CREATE INDEX marks_by_date ON marks (created_at DESC)',
-        );
-      },
+      onCreate: (db, version) => defineSchema(db),
     );
 
     return _instance = LibraryDatabase._(db);
+  }
+
+  /// The tables, in one place so a test builds the same ones the app does.
+  ///
+  /// Note the conflict clause: it is declared on the unique index over
+  /// (chapter_id, verse), and *not* on the primary key. LibraryRepository.save
+  /// has to ask for REPLACE itself because of it.
+  @visibleForTesting
+  static Future<void> defineSchema(Database db) async {
+    await db.execute('''
+      CREATE TABLE marks (
+        id          INTEGER PRIMARY KEY AUTOINCREMENT,
+        chapter_id  TEXT    NOT NULL,
+        verse       INTEGER NOT NULL,
+        book_id     TEXT    NOT NULL,
+        reference   TEXT    NOT NULL,
+        preview     TEXT    NOT NULL,
+        colour      TEXT    NOT NULL,
+        note        TEXT,
+        created_at  INTEGER NOT NULL,
+        UNIQUE (chapter_id, verse) ON CONFLICT REPLACE
+      )
+    ''');
+
+    // The list is read newest-first and the reader is read by chapter.
+    await db.execute('CREATE INDEX marks_by_chapter ON marks (chapter_id)');
+    await db.execute('CREATE INDEX marks_by_date ON marks (created_at DESC)');
   }
 
   Future<void> close() async {
