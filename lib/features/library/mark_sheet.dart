@@ -26,7 +26,15 @@ Future<void> showMarkSheet(
       padding: EdgeInsets.only(
         bottom: MediaQuery.viewInsetsOf(context).bottom,
       ),
-      child: _MarkSheet(verse: verse, reference: reference),
+      // Scrollable, because the keyboard takes nearly half a short phone and
+      // the sheet is taller than what is left. Without somewhere to scroll,
+      // the column simply overflowed: the note field and the button that
+      // saves it were clipped off the bottom, so the feature looked broken at
+      // exactly the moment it was being used. A scroll view is also what lets
+      // the framework bring the focused field into view at all.
+      child: SingleChildScrollView(
+        child: _MarkSheet(verse: verse, reference: reference),
+      ),
     ),
   );
 }
