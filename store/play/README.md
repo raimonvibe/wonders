@@ -299,23 +299,29 @@ Thank you for testing — tell me anything that feels off. 🙏
 
 ### Production
 
+Paste this for the production upload of `1.0.0+10`. 492 of Play's 500,
+counted in UTF-16 code units.
+
+The first production notes described the app as a whole. This set keeps that
+frame and names the one thing that is new: a brown page colour beside the
+green and the blue, pinned in settings or following the Testament. The Listen
+sentence is a little shorter than it was, only because that line had to fit.
+
 ```
 <en-US>
-📖 The first release of Wonders and Hope.
+Wonders and Hope 1.0
 
-178 of the Bible's miracles, each with the passage open right beside it.
+178 of the Bible's wonders, each with the passage in which it occurs, alongside the complete Scripture.
 
-• Browse by theme, era, or take the guided tour
-• The whole Bible (World English Bible)
-• Listen aloud, even with the screen off 🎧
-• Keep verses with a colour and a note
-• Share a wonder as a quote image
+Select Listen and the passage is read aloud while the words are highlighted and drawn into view. Made for extended reading, limited vision, and listening while the hands are occupied. Voice, speed and pitch are yours to set.
 
-Works fully offline. No account, no ads, and nothing about you leaves your phone.
+Pages may be green, blue or brown — pin one, or let it follow the Testament.
+
+Opens promptly. Works entirely offline. No data is collected.
 </en-US>
 ```
 
-417 characters.
+492 characters.
 
 ## Countries
 
