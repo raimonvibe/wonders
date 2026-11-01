@@ -19,7 +19,7 @@ dependencies:
   # declared above, and every provider here is a StateNotifier, which v3
   # deprecates. Moving would mean dropping Flutter 3.27-3.34 and rewriting
   # providers.dart; neither is worth it yet.
-  flutter_riverpod: ^2.6.1
+  flutter_riverpod: ^3.4.3
 
   # Routing. StatefulShellRoute is what lets each bottom-nav tab keep its own
   # navigator stack, which is what keeps a wonder's passage from stealing the
