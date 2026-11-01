@@ -45,7 +45,7 @@ dependencies:
   # Share a card as an image.
   share_plus: ^13.3.0
 
-  google_fonts: ^8.2.1
+  google_fonts: ^9.0.0
 
   # The maker's links at the foot of the More tab. url_launcher opens them —
   # note the https <queries> entry it needs in AndroidManifest.xml, for the same
